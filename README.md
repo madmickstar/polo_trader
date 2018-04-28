@@ -19,7 +19,7 @@ Polo Trader features
 How it works
 ------------
 * User defines or script grabs from local JSON file the following
-  * Amount of units to sell in next trade
+  * Amount of units to trade
   * To and From trading coins/tokens (symbols)
   * The crypto fiat the trade will go via, USDT, BTC or ETH 
   * Last trade buy sell prices
