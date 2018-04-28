@@ -1,6 +1,6 @@
 POLO TRADER
 ===========
-`polo_trader` is alpha at present and should not be used without supervising it, especially at
+`polo_trader` is alpha at present and should not be used without supervising its actions, especially at
 the time of trading.
 
 `polo_trader` is a tool for automating trades on the Poloniex Exchange. The script trades 
@@ -19,10 +19,10 @@ Polo Trader features
 How it works
 ------------
 * User defines or script grabs from local JSON file the following
-  * Amount of units to trade
-  * To and From trading coins/tokens (symbols)
+  * Amount of units to sell in next trade
+  * The From and To trading coins/tokens (symbols)
   * The crypto fiat the trade will go via, USDT, BTC or ETH 
-  * Last trade buy sell prices
+  * Last trade buy/sell prices
   * Last trade ratio
 * Script calculates the break even trading ratio between the two symbols. The breakeven ratio is 
 calculated using the last sale and buy price with the addition of the exchange's worst case fees added
