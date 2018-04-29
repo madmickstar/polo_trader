@@ -1,12 +1,12 @@
 POLO TRADER
 ===========
-`polo_trader` is alpha at present and should not be used without supervising its actions, especially at
+`polo_trader` is alpha at present and should not be used without supervising its actions, especially at 
 the time of trading.
 
-`polo_trader` is a tool for automating trades on the Poloniex Exchange. The script trades 
-between two different crypto pairs via a fiat crypto when the difference in purchase prices,
-hits a user controlled trading ratio. The script continuously trades back and forth between 
-the two crypto pairs, every time the trading threshold is hit.
+`polo_trader` is a tool for automating trades on the Poloniex Exchange. The script trades between two 
+different crypto pairs via a crypto fiat when the difference in purchase prices, hits a user controlled 
+trading ratio. The script continuously trades back and forth between the two crypto pairs, every time 
+the trading threshold is hit.
 
 Polo Trader features
 --------------------
