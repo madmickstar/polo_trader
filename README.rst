@@ -53,11 +53,7 @@ How it works
 Usage
 -----
 
-\` polo\_trader [ -s {xrp, str, nxt, eth, btc} \| -b {str, xrp, nxt,
-eth, btc} \| -f {usdt, eth, btc} \| -mf {0.0025, 0.0015} \| -tf {0...10}
-\| -l \| -t \| -d \| -h \| --version ]
-
-\`
+``polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ]``
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |
