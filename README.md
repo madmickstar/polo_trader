@@ -23,7 +23,7 @@ How it works
 ------------
 * User initiates script defining Sell, Buy and Fiat cryptos
 * Script grabs from local JSON file the following items from last trade
-  * Amount of units purchased which become sell in next trade
+  * Amount of units purchased which become sell units in next trade
   * The From and To crypto pairs (symbols)
   * The crypto fiat the trade will go via, USDT, BTC or ETH 
   * Last trade buy/sell prices
@@ -34,10 +34,10 @@ local JSON file with the details
 using the last trade's sell and buy prices, with the addition of the exchange's worst case fees added
 * From the breakeven ratio, the trading ratio/threshold is calculated. The user controls the trading
 threshold by defining a trading factor which is added to the breakeven ratio. 
-* The script then uses the exchange's order books for both sell and buy crypto pairs to calculates the 
+* The script then uses the exchange's order books for both sell and buy crypto pairs to calculate the 
 price required to fill the sale units and the estimated purchase units. These prices are then used to 
-calculate the current trading ratio which the script uses to monitoring
-* When the current trading ratio matches the desired trading threshold, the script initiates a sell and  
+calculate the current trading ratio which the script uses for monitoring
+* When the current trading ratio matches the desired trading threshold, the script initiates a sell and 
 then a buy of the trading crypto pairs
 
 
@@ -51,7 +51,7 @@ Argument  | Type   | Format               | Default           | Description
 -b [crypto] | string | -b {str,xrp,nxt,eth,btc} | str | Buying crypto
 -f [crypto] | string | -f {usdt,eth,btc} | usdt | Fiat crypto
 -mf [fee] | float | -mf {0.0025,0.0015} | 0.0025 | Maximum fee for trading
--tf [factor] | float | -tf {0.0,0.5,1.0,..,9.0,9.5,10.0} | 10.0 | Trading factor percentage, added to breakeven ratio to produce trading factor
+-tf [factor] | float | -tf {0.0,0.5,1.0,..,9.0,9.5,10.0} | 10.0 | Trading factor percentage, added to breakeven ratio to produce trading threshold
 -l | switch | -l | disabled | Log to a file
 -t | switch | -t | disabled | Timestamp output
 -d | switch | -d | disabled | Enables debug output to console

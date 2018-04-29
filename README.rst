@@ -27,7 +27,7 @@ How it works
 
 -  User initiates script defining Sell, Buy and Fiat cryptos
 -  Script grabs from local JSON file the following items from last trade
--  Amount of units purchased which become sell in next trade
+-  Amount of units purchased which become sell units in next trade
 -  The From and To crypto pairs (symbols)
 -  The crypto fiat the trade will go via, USDT, BTC or ETH
 -  Last trade buy/sell prices
@@ -42,13 +42,13 @@ How it works
    The user controls the trading threshold by defining a trading factor
    which is added to the breakeven ratio.
 -  The script then uses the exchange's order books for both sell and buy
-   crypto pairs to calculates the price required to fill the sale units
+   crypto pairs to calculate the price required to fill the sale units
    and the estimated purchase units. These prices are then used to
-   calculate the current trading ratio which the script uses to
+   calculate the current trading ratio which the script uses for
    monitoring
 -  When the current trading ratio matches the desired trading threshold,
-   the script initiates a sell and
-   then a buy of the trading crypto pairs
+   the script initiates a sell and then a buy of the trading crypto
+   pairs
 
 Usage
 -----
@@ -76,7 +76,7 @@ Usage
 | [factor]  |         | {0.0,0.5,1.0,..,9.0 |                   | percentage, added  |
 |           |         | ,9.5,10.0}          |                   | to breakeven ratio |
 |           |         |                     |                   | to produce trading |
-|           |         |                     |                   | factor             |
+|           |         |                     |                   | threshold          |
 +-----------+---------+---------------------+-------------------+--------------------+
 | -l        | switch  | -l                  | disabled          | Log to a file      |
 +-----------+---------+---------------------+-------------------+--------------------+
