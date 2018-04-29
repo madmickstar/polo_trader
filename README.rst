@@ -6,9 +6,10 @@ supervising its actions, especially at the time of trading.
 
 ``polo_trader`` is a tool for automating trades on the Poloniex
 Exchange. The script trades between two different crypto pairs via a
-fiat crypto when the difference in purchase prices, hits a user
-controlled trading ratio. The script continuously trades back and forth
-between the two crypto pairs, every time the trading threshold is hit.
+crypto fiat when the difference in purchase prices, hits a user
+controlled trading ratio/threshold. The script continuously trades back
+and forth between the two crypto pairs, every time the trading threshold
+is hit.
 
 Polo Trader features
 --------------------
