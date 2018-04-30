@@ -157,84 +157,6 @@ def date_conversions(date_stamp):
     }
     return date_dict
 
-    
-
-#def get_balances(polo):
-#    '''
-#    retrieve available balances and return list of dictionaries
-#    '''
-#    logger = logging.getLogger(__name__)
-#    try:
-#        results = polo.returnAvailableAccountBalances()
-#        # returns this {u'exchange': {u'XRP': u'67.47821979', u'STR': u'312.29382782'}}
-#        # or
-#        # [] when all funds are tied up in orders
-#    except Exception as err:
-#        #logger.error('get_balances - Error getting balances - %s' % err)
-#        result_dict = {
-#            'result': False,
-#            'error': err,
-#        }
-#        return result_dict
-#    avail_balances_lod = []
-#    # first check the list returned is not empty
-#    if len(results) > 0:
-#        # then check if there is any balances
-#        if len(results['exchange']) > 0:
-#            for a in results['exchange']:
-#                # this is what you need to grab - a, float(results['exchange'][a])))
-#                balance = {
-#                    'name': a,
-#                    'units': float(results['exchange'][a]),
-#                }
-#                avail_balances_lod.append(balance)
-#    result_dict = {
-#        'result': avail_balances_lod,
-#        'error': False,
-#    }
-#    return result_dict
-#    
-#
-#def get_orderbook(polo, pair, order_type='bid'):
-#    '''
-#    retrieve orderbook and return list of dictionaries
-#    '''
-#    logger = logging.getLogger(__name__)
-#    try:
-#        results = polo.returnOrderBook(currencyPair=pair)
-#        # same return {u'seq': 113346801, u'bids': [[u'0.82163798', u'2.43416207'], [u'0.82099275', u'73577.042']], u'isFrozen': u'0', u'asks': [[u'0.82496594', u'8520.057'], [u'0.82496595', u'3921.68897093']]
-#    except Exception as err:
-#        result_dict = {
-#            'result': False,
-#            'error': err,
-#        }
-#        return result_dict
-#    current_orders = []
-#    #logger.debug('%s' % results)
-#    # first check the list returned is not empty
-#    if len(results) > 0:
-#        if order_type=='bid':
-#            for a in results['bids']:
-#                current_orders.append([a[0], a[1]])
-#        elif order_type=='ask':   
-#            if int(results['isFrozen']) > 0:  
-#                print('\n%s Asks order book is frozen  - value is %s' % (pair, results['isFrozen']))
-# 
-#            for a in results['asks']:
-#                current_orders.append([a[0], a[1]])
-#
-#    if len(current_orders) < 0:
-#        result_dict = {
-#            'result': False,
-#            'error': 'No orders returned',
-#        }
-#    else:
-#        result_dict = {
-#            'result': current_orders,
-#            'error': False,
-#        }
-#    return result_dict
-
  
 
 def main():
@@ -307,7 +229,7 @@ def main():
     date_formatted = (date_stamp[0:4] + "-" + date_stamp[4:6] + "-" + date_stamp[6:8]).center(10)
         
     # create header
-    headers_row = [(date_formatted, 'Sell Pair', 'Units', 'Price', '$ '+pairing+' $', 'Buy Pair', 'Units', 'Price', 'Ratio')]
+    headers_row = [(date_formatted, 'Sell Pair', 'Units', 'Price', '$ '+pairing+' $', 'Buy Pair', 'Est. Units', 'Price', 'Ratio')]
     header_counter = 20
     
     
