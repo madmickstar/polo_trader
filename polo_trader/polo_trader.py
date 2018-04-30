@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-
 import sys, os
 import json
 import time
 import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
 import traceback
-
 
 # from 3rd party
 # pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
@@ -18,24 +16,22 @@ from poloniex import Poloniex
 # from local
 from _version import __version__
 import polo_tools
-import config
 from polo_trader_profiling import ProfilePairs, JsonProfiles
 from polo_gets import get_current_tickers, get_orderbook, get_coin_balance, get_balances
 from polo_gets import get_open_orders, get_trade_ordernumber, get_trade_history
 from polo_sell_buy import sell_coins, buy_coins, move_order, cancel_order
 
 
-
 def process_cli():
     # processes cli arguments and usage guide
     parser = ArgumentParser(prog='polo_trader',
-    description='''         Buy and sell on poloneix \n \
+    description='''         Buy and sell on Poloniex exchange \n \
         trade between coins based on ratio
         ''',
     epilog='''Command line examples \n\n \
         ## Windows and POSIX Users ## \n \
-        python polo_trade.py -tf 5 -s xrp -b str \n \
-        python polo_trade.py -tf 5 -s xrp -b nxt \n \
+        python polo_trade.py -s xrp -b str -tf 5 \n \
+        python polo_trade.py -s xrp -b nxt -tf 5 \n \
         ''',
     formatter_class=RawTextHelpFormatter)
     parser.add_argument('-mf', '--max-fee',
@@ -679,7 +675,14 @@ def main():
     # configure logging
     logging = configure_logging(args)
     logger = logging.getLogger(__name__)
-
+    
+    # confirm user has updated the config file
+    try:
+        import config
+    except:
+        logger.error('config.py not found in module dir, rename config.txt to config.py and edit api and private key')
+        sys.exit(1)
+    
     # targets maximum value
     max_target_value = 10
 

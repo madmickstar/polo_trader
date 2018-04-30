@@ -22,6 +22,7 @@ Polo Trader Features
 -  ETH pairs 'ETH\_XRP', 'ETH\_STR', 'ETH\_NXT', 'ETH\_BTC'
 -  BTC pairs 'BTC\_XRP', 'BTC\_STR', 'BTC\_NXT', 'BTC\_ETH'
 -  Tracks most recent trade in a local JSON file
+-  Includes a monitoring only script called Order Book
 
 How It Works
 ------------
@@ -73,10 +74,12 @@ Install Instructions
        api_key = 'you_api_key_here'
        private_key = 'your_private_key_here'
 
-Usage
------
+Usage Polo Trader
+-----------------
 
-``polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ]``
+::
+
+    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0.0,..,10.0} | -l | -t | -d | -h | --version ] 
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |
@@ -113,3 +116,32 @@ Usage
 +-----------+---------+---------------------+-------------------+--------------------+
 | --version | switch  | --version           | disabled          | Displays version   |
 +-----------+---------+---------------------+-------------------+--------------------+
+
+Usage Order Book
+----------------
+
+::
+
+    order_book [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -l | -t | -d | -h | --version ]
+
++---------------+----------+----------------------------+------------+-----------------------------------+
+| Argument      | Type     | Format                     | Default    | Description                       |
++===============+==========+============================+============+===================================+
+| -s [crypto]   | string   | -s {xrp,str,nxt,eth,btc}   | xrp        | Selling crypto                    |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -b [crypto]   | string   | -b {str,xrp,nxt,eth,btc}   | str        | Buying crypto                     |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -f [crypto]   | string   | -f {usdt,eth,btc}          | usdt       | Fiat crypto                       |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -mf [fee]     | float    | -mf {0.0025,0.0015}        | 0.0025     | Maximum fee for trading           |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -l            | switch   | -l                         | disabled   | Log to a file                     |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -t            | switch   | -t                         | disabled   | Timestamp output                  |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -d            | switch   | -d                         | disabled   | Enables debug output to console   |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| -h            | switch   | -h                         | disabled   | Prints help to console            |
++---------------+----------+----------------------------+------------+-----------------------------------+
+| --version     | switch   | --version                  | disabled   | Displays version                  |
++---------------+----------+----------------------------+------------+-----------------------------------+

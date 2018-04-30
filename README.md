@@ -18,6 +18,7 @@ Polo Trader Features
   * ETH pairs 'ETH_XRP', 'ETH_STR', 'ETH_NXT', 'ETH_BTC'
   * BTC pairs 'BTC_XRP', 'BTC_STR', 'BTC_NXT', 'BTC_ETH'
 * Tracks most recent trade in a local JSON file 
+* Includes a monitoring only script called Order Book
 
 
 How It Works
@@ -59,9 +60,11 @@ private_key = 'your_private_key_here'
 ```
 
 
-Usage
------
-` polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ] `
+Usage Polo Trader
+-----------------
+```
+polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0.0,..,10.0} | -l | -t | -d | -h | --version ] 
+```
 
 Argument  | Type   | Format               | Default           | Description
 ----------|--------|----------------------|-------------------|--------------------
@@ -70,6 +73,25 @@ Argument  | Type   | Format               | Default           | Description
 -f [crypto] | string | -f {usdt,eth,btc} | usdt | Fiat crypto
 -mf [fee] | float | -mf {0.0025,0.0015} | 0.0025 | Maximum fee for trading
 -tf [factor] | float | -tf {0.0,0.5,1.0,..,9.0,9.5,10.0} | 10.0 | Trading factor percentage, added to breakeven ratio to produce trading threshold
+-l | switch | -l | disabled | Log to a file
+-t | switch | -t | disabled | Timestamp output
+-d | switch | -d | disabled | Enables debug output to console
+-h | switch | -h | disabled | Prints help to console   
+--version | switch | --version | disabled | Displays version
+
+
+Usage Order Book
+-----------------
+```
+order_book [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -l | -t | -d | -h | --version ]
+```
+
+Argument  | Type   | Format               | Default           | Description
+----------|--------|----------------------|-------------------|--------------------
+-s [crypto] | string | -s {xrp,str,nxt,eth,btc} | xrp | Selling crypto
+-b [crypto] | string | -b {str,xrp,nxt,eth,btc} | str | Buying crypto
+-f [crypto] | string | -f {usdt,eth,btc} | usdt | Fiat crypto
+-mf [fee] | float | -mf {0.0025,0.0015} | 0.0025 | Maximum fee for trading
 -l | switch | -l | disabled | Log to a file
 -t | switch | -t | disabled | Timestamp output
 -d | switch | -d | disabled | Enables debug output to console

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import division
-from poloniex import Poloniex
 
 import sys, os
 import json
-
 import time
 from calendar import timegm
 from dateutil import tz
@@ -15,10 +13,13 @@ import tzlocal # $ pip install tzlocal
 import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
 
+# from 3rd party
+# pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
+from poloniex import Poloniex
 
+#from local
 from _version import __version__
 import polo_tools
-import config
 from polo_gets import get_balances, get_orderbook
 from order_book_tabledraw import tableDraw
 
@@ -35,7 +36,7 @@ def process_cli():
         Note:- default fiat is usdt \n\n \
         ## Windows and POSIX Users ## \n \
         python order_book.py -s xrp -b nxt -f btc \n \
-        python order_book.py  -s xrp -b str -f usdt \n \
+        python order_book.py -s xrp -b str -f usdt \n \
         ''',
     formatter_class=RawTextHelpFormatter)
     parser.add_argument('-mf', '--max-fee',
@@ -243,6 +244,13 @@ def main():
 
     logging = configure_logging(args)
     logger = logging.getLogger(__name__)
+    
+    # confirm user has updated the config file
+    try:
+        import config
+    except:
+        logger.error('config.py not found in module dir, rename config.txt to config.py and edit api and private key')
+        sys.exit(1)
 
     trade_status_json = 'trade_status.json'
     trade_profile_json = 'trade_profile_test.json'
