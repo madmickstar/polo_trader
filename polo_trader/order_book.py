@@ -39,11 +39,6 @@ def process_cli():
         python order_book.py -s xrp -b str -f usdt \n \
         ''',
     formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-mf', '--max-fee',
-        default='0.0025',
-        type=float,
-        metavar=('{0.0025, 0.0015}'),
-        help='Maximum fee for trading, default is 0.25 = 0.0025')
     parser.add_argument('-s', '--sell',
         default='xrp',
         choices=['xrp', 'str', 'nxt', 'eth', 'btc'],
@@ -59,6 +54,11 @@ def process_cli():
         choices=['usdt', 'eth', 'btc'],
         metavar=('{usdt, eth, btc}'),
         help='Fiat coin, default = usdt')
+    parser.add_argument('-mf', '--max-fee',
+        default='0.0025',
+        type=float,
+        metavar=('{0.0025, 0.0015}'),
+        help='Maximum fee for trading, default is 0.25 percent = 0.0025')
     parser.add_argument('-l', '--log',
         action="store_true",
         help='Enable logging to a file')

@@ -29,16 +29,12 @@ def process_cli():
         trade between coins based on ratio
         ''',
     epilog='''Command line examples \n\n \
+        Note:- default fiat is usdt \n\n \
         ## Windows and POSIX Users ## \n \
         python polo_trade.py -s xrp -b str -tf 5 \n \
         python polo_trade.py -s xrp -b nxt -tf 5 \n \
         ''',
     formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-mf', '--max-fee',
-        default='0.0025',
-        type=float,
-        metavar=('{0.0025, 0.0015}'),
-        help='Maximum fee for trading, default is 0.25 = 0.0025')
     parser.add_argument('-s', '--sell',
         default='xrp',
         choices=['xrp', 'str', 'nxt', 'eth', 'btc'],
@@ -58,8 +54,13 @@ def process_cli():
         default='10.0',
         type=float,
         choices=[0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0],
-        metavar=('{0.5 1.0 .. 9.5 10.0}'),
+        metavar=('{0.5, 1.0, .. 9.5, 10.0}'),
         help='Target factor, default = 10.0')
+    parser.add_argument('-mf', '--max-fee',
+        default='0.0025',
+        type=float,
+        metavar=('{0.0025, 0.0015}'),
+        help='Maximum fee for trading, default is 0.25 percent = 0.0025')
     parser.add_argument('-ft', '--factor-threshold',
         default='2',
         type=int,
