@@ -8,6 +8,7 @@ different crypto pairs via a crypto fiat when the difference in purchase prices,
 trading ratio/threshold. The script continuously trades back and forth between the two crypto pairs, 
 every time the trading threshold is hit.
 
+--------------------
 Polo Trader Features
 --------------------
 
@@ -19,6 +20,7 @@ Polo Trader Features
   * BTC pairs 'BTC_XRP', 'BTC_STR', 'BTC_NXT', 'BTC_ETH'
 * Tracks most recent trade in a local JSON file 
 
+------------
 How It Works
 ------------
 * User initiates script defining Sell, Buy and Fiat cryptos
@@ -40,7 +42,7 @@ calculate the current trading ratio which the script uses for monitoring
 * When the current trading ratio matches the desired trading threshold, the script initiates a sell and 
 then a buy of the trading crypto pairs
 
-
+--------------------
 Install Instructions
 --------------------
 * Install 3rd party dependency 
@@ -53,10 +55,11 @@ Install Instructions
 
 ` 
 api_key = 'you_api_key_here'
+
 private_key = 'your_private_key_here'
 `
 
-
+-----
 Usage
 -----
 ` polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ] `
