@@ -45,13 +45,14 @@ then a buy of the trading crypto pairs
 Install Instructions
 --------------------
 * Install 3rd party dependency 
-
-`pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip`
+```
+pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
+```
 * Download package from the following link 
-
-`https://github.com/madmickstar/polo_trader/archive/develop.zip`
+```
+https://github.com/madmickstar/polo_trader/archive/develop.zip`
+```
 * Rename config.txt to config.py and edit keys
-
 ```
 api_key = 'you_api_key_here'
 private_key = 'your_private_key_here'
