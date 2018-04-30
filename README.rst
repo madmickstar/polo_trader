@@ -11,183 +11,90 @@ controlled trading ratio/threshold. The script continuously trades back
 and forth between the two crypto pairs, every time the trading threshold
 is hit.
 
-+------------------------+
-| Polo Trader Features   |
-+------------------------+
++----------------------+
+| Polo Trader Features |
++----------------------+
+| \* Automates trades  |
+| between crypto pairs |
+| on the Poloniex      |
+| exchange \* Requires |
+| private API to make  |
+| trades \* Trades     |
+| between \* USDT      |
+| pairs 'USDT\_XRP',   |
+| 'USDT\_STR',         |
+| 'USDT\_NXT',         |
+| 'USDT\_ETH',         |
+| 'USDT\_BTC' \* ETH   |
+| pairs 'ETH\_XRP',    |
+| 'ETH\_STR',          |
+| 'ETH\_NXT',          |
+| 'ETH\_BTC' \* BTC    |
+| pairs 'BTC\_XRP',    |
+| 'BTC\_STR',          |
+| 'BTC\_NXT',          |
+| 'BTC\_ETH' \* Tracks |
+| most recent trade in |
+| a local JSON file    |
++----------------------+
 
--  Automates trades between crypto pairs on the Poloniex exchange
--  Requires private API to make trades
--  Trades between
--  USDT pairs 'USDT\_XRP', 'USDT\_STR', 'USDT\_NXT', 'USDT\_ETH',
-   'USDT\_BTC'
--  ETH pairs 'ETH\_XRP', 'ETH\_STR', 'ETH\_NXT', 'ETH\_BTC'
--  BTC pairs 'BTC\_XRP', 'BTC\_STR', 'BTC\_NXT', 'BTC\_ETH'
--  Tracks most recent trade in a local JSON file
+How It Works
 
-+-------------+
-| How It      |
-| Works       |
-+=============+
-| \* User     |
-| initiates   |
-| script      |
-| defining    |
-| Sell, Buy   |
-| and Fiat    |
-| cryptos \*  |
-| Script      |
-| grabs from  |
-| local JSON  |
-| file the    |
-| following   |
-| items from  |
-| last trade  |
-| \* Amount   |
-| of units    |
-| purchased   |
-| which       |
-| become sell |
-| units in    |
-| next trade  |
-| \* The From |
-| and To      |
-| crypto      |
-| pairs       |
-| (symbols)   |
-| \* The      |
-| crypto fiat |
-| the trade   |
-| will go     |
-| via, USDT,  |
-| BTC or ETH  |
-| \* Last     |
-| trade       |
-| buy/sell    |
-| prices \*   |
-| Last trade  |
-| ratio \* If |
-| last trade  |
-| does not    |
-| exist,      |
-| script      |
-| grabs       |
-| current     |
-| prices from |
-| exchange    |
-| order books |
-| and         |
-| populates   |
-| the local   |
-| JSON file   |
-| with the    |
-| details \*  |
-| Script      |
-| calculates  |
-| the         |
-| breakeven   |
-| ratio       |
-| between the |
-| two crypto  |
-| pairs. The  |
-| breakeven   |
-| ratio is    |
-| calculated  |
-| using the   |
-| last        |
-| trade's     |
-| sell and    |
-| buy prices, |
-| with the    |
-| addition of |
-| the         |
-| exchange's  |
-| worst case  |
-| fees added  |
-| \* From the |
-| breakeven   |
-| ratio, the  |
-| trading     |
-| ratio/thres |
-| hold        |
-| is          |
-| calculated. |
-| The user    |
-| controls    |
-| the trading |
-| threshold   |
-| by defining |
-| a trading   |
-| factor      |
-| which is    |
-| added to    |
-| the         |
-| breakeven   |
-| ratio. \*   |
-| The script  |
-| then uses   |
-| the         |
-| exchange's  |
-| order books |
-| for both    |
-| sell and    |
-| buy crypto  |
-| pairs to    |
-| calculate   |
-| the price   |
-| required to |
-| fill the    |
-| sale units  |
-| and the     |
-| estimated   |
-| purchase    |
-| units.      |
-| These       |
-| prices are  |
-| then used   |
-| to          |
-| calculate   |
-| the current |
-| trading     |
-| ratio which |
-| the script  |
-| uses for    |
-| monitoring  |
-| \* When the |
-| current     |
-| trading     |
-| ratio       |
-| matches the |
-| desired     |
-| trading     |
-| threshold,  |
-| the script  |
-| initiates a |
-| sell and    |
-| then a buy  |
-| of the      |
-| trading     |
-| crypto      |
-| pairs       |
-+-------------+
+-  User initiates script defining Sell, Buy and Fiat cryptos
+-  Script grabs from local JSON file the following items from last trade
+-  Amount of units purchased which become sell units in next trade
+-  The From and To crypto pairs (symbols)
+-  The crypto fiat the trade will go via, USDT, BTC or ETH
+-  Last trade buy/sell prices
+-  Last trade ratio
+-  If last trade does not exist, script grabs current prices from
+   exchange order books and populates the local JSON file with the
+   details
+-  Script calculates the breakeven ratio between the two crypto pairs.
+   The breakeven ratio is calculated using the last trade's sell and buy
+   prices, with the addition of the exchange's worst case fees added
+-  From the breakeven ratio, the trading ratio/threshold is calculated.
+   The user controls the trading threshold by defining a trading factor
+   which is added to the breakeven ratio.
+-  The script then uses the exchange's order books for both sell and buy
+   crypto pairs to calculate the price required to fill the sale units
+   and the estimated purchase units. These prices are then used to
+   calculate the current trading ratio which the script uses for
+   monitoring
+-  When the current trading ratio matches the desired trading threshold,
+   the script initiates a sell and then a buy of the trading crypto
+   pairs
 
-Install Instructions
---------------------
++----------------------+
+| Install Instructions |
++----------------------+
+| \* Install 3rd party |
+| dependency           |
++----------------------+
+| ``pip install https: |
+| //github.com/s4w3d0f |
+| f/python-poloniex/ar |
+| chive/v0.4.7.zip``   |
+| \* Download package  |
+| from the following   |
+| link                 |
++----------------------+
+| ``https://github.com |
+| /madmickstar/polo_tr |
+| ader/archive/develop |
+| .zip``               |
+| \* Rename config.txt |
+| to config.py and     |
+| edit keys            |
++----------------------+
+| ``api_key = 'you_api |
+| _key_here'``         |
+| ``private_key = 'you |
+| r_private_key_here'` |
+| `                    |
++----------------------+
 
--  Install 3rd party dependency
-
-``pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip``
-\* Download package from the following link
-
-``https://github.com/madmickstar/polo_trader/archive/develop.zip`` \*
-Rename config.txt to config.py and edit keys
-
-\` api\_key = 'you\_api\_key\_here'
-
-private\_key = 'your\_private\_key\_here' \`
-
-+---------+
-| Usage   |
-+---------+
+Usage
 
 ``polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ]``
 

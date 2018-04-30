@@ -10,7 +10,6 @@ every time the trading threshold is hit.
 
 --------------------
 Polo Trader Features
---------------------
 
 * Automates trades between crypto pairs on the Poloniex exchange 
 * Requires private API to make trades
@@ -22,7 +21,7 @@ Polo Trader Features
 
 ------------
 How It Works
-------------
+
 * User initiates script defining Sell, Buy and Fiat cryptos
 * Script grabs from local JSON file the following items from last trade
   * Amount of units purchased which become sell units in next trade
@@ -44,7 +43,7 @@ then a buy of the trading crypto pairs
 
 --------------------
 Install Instructions
---------------------
+
 * Install 3rd party dependency 
 
 `pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip`
@@ -53,15 +52,12 @@ Install Instructions
 `https://github.com/madmickstar/polo_trader/archive/develop.zip`
 * Rename config.txt to config.py and edit keys
 
-` 
-api_key = 'you_api_key_here'
-
-private_key = 'your_private_key_here'
-`
+`api_key = 'you_api_key_here'`
+`private_key = 'your_private_key_here'`
 
 -----
 Usage
------
+
 ` polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0...10} | -l | -t | -d | -h | --version ] `
 
 Argument  | Type   | Format               | Default           | Description
