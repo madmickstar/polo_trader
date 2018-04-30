@@ -14,9 +14,9 @@ Polo Trader Features
 * Automates trades between crypto pairs on the Poloniex exchange 
 * Requires private API to make trades
 * Trades between 
-  * USDT pairs 'USDT_XRP', 'USDT_STR', 'USDT_NXT', 'USDT_ETH', 'USDT_BTC'
-  * ETH pairs 'ETH_XRP', 'ETH_STR', 'ETH_NXT', 'ETH_BTC'
-  * BTC pairs 'BTC_XRP', 'BTC_STR', 'BTC_NXT', 'BTC_ETH'
+  * USDT pairs - USDT_XRP, USDT_STR, USDT_NXT, USDT_ETH, USDT_BTC
+  * ETH pairs - ETH_XRP, ETH_STR, ETH_NXT, ETH_BTC
+  * BTC pairs - BTC_XRP, BTC_STR, BTC_NXT, BTC_ETH
 * Tracks most recent trade in a local JSON file 
 * Includes a monitoring only script called Order Book
 
