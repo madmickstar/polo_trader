@@ -64,7 +64,7 @@ Install Instructions
 
    ::
 
-       https://github.com/madmickstar/polo_trader/archive/develop.zip`
+       https://github.com/madmickstar/polo_trader/archive/develop.zip
 
 -  Rename config.txt to config.py and edit keys
 
