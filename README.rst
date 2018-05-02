@@ -60,11 +60,17 @@ Install Instructions
 
        pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
 
--  Download package from the following link
+-  Download package from the following link and unzip
 
    ::
 
        https://github.com/madmickstar/polo_trader/archive/develop.zip
+
+-  Install requirements
+
+   ::
+
+       pip install -r requirements.txt
 
 -  Rename config.txt to config.py and edit keys
 
