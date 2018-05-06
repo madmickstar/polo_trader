@@ -827,6 +827,7 @@ def main():
             purchase_stats_dict, current_stats_dict, even_stats_dict, lod_targets = mycoins.get_even_and_targets(max_target_value)
         except RuntimeError, err:
             logger.error(str(err))
+            continue
         except Exception, err:
             traceback.print_exc()
             continue
