@@ -11,6 +11,11 @@ controlled trading ratio/threshold. The script continuously trades back
 and forth between the two crypto pairs, every time the trading threshold
 is hit.
 
+``polo_trader`` includes a monitoring script called ``order_book`` which
+enables the ability to view the current gain/loss of the crypto pairs
+you want to trade between. Always run ``order_book`` before using
+``polo_trader``, to ensure the outcome is desirable.
+
 Polo Trader Features
 --------------------
 
@@ -22,22 +27,6 @@ Polo Trader Features
 -  BTC pairs - BTC\_XRP, BTC\_STR, BTC\_NXT, BTC\_ETH
 -  Tracks most recent trade in a local JSON file
 -  Includes a monitoring only script called Order Book
-
-Disclaimer
-----------
-
-I am not your financial adviser, nor is this tool. This software is for
-educational purposes only. Use the software at your own risk. The
-authors and all affiliates assume no responsibility for your trading
-results.
-
-The ``polo_trader`` script uses a simple trade strategy which may
-underperform other trading strategies. Read the code, understand the way
-the script works and never leave the script unmonitored.
-
-Always start by running the ``order_book`` monitoring script and do not
-engage in trading before you understand the potential outcomes and what
-profit/loss you should expect.
 
 How It Works
 ------------
@@ -166,3 +155,19 @@ Usage Order Book
 +---------------+----------+----------------------------+------------+-----------------------------------+
 | --version     | switch   | --version                  | disabled   | Displays version                  |
 +---------------+----------+----------------------------+------------+-----------------------------------+
+
+Disclaimer
+----------
+
+I am not your financial adviser, nor is this tool. This software is for
+educational purposes only. Use the software at your own risk. The
+authors and all affiliates assume no responsibility for your trading
+results.
+
+The ``polo_trader`` script uses a simple trade strategy which may
+underperform other trading strategies. Read the code, understand the way
+the script works and never leave the script unmonitored.
+
+Always start by running the ``order_book`` monitoring script and do not
+engage in trading using the ``polo_trader`` script, before you
+understand the potential outcomes and what gain/loss you should expect.
