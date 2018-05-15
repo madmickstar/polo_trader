@@ -21,6 +21,15 @@ Polo Trader Features
 * Includes a monitoring only script called Order Book
 
 
+Disclaimer
+------------
+I am not your financial adviser, nor is this tool. This software is for educational purposes only. Use the software at your own risk. The authors and all affiliates assume no responsibility for your trading results.
+
+The `polo_trader` script uses a simple trade strategy which may underperform other trading strategies. Read the code, understand the way the script works and never leave the script unmonitored. 
+
+Always start by running the `order_book` monitoring script and do not engage in trading before you understand the potential outcomes and what profit/loss you should expect.
+
+
 How It Works
 ------------
 * User initiates script defining Sell, Buy and Fiat cryptos
