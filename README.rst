@@ -89,7 +89,7 @@ Usage Polo Trader
 
 ::
 
-    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0.0,..,10.0} | -l | -t | -d | -h | --version ] 
+    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -tt {0.0,..,20.0} | -or {0.0000} | -mf {0.0025, 0.0015} | -e | -l | -t | -d | -h | --version ] 
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |
@@ -105,14 +105,22 @@ Usage Polo Trader
 | -f        | string  | -f {usdt,eth,btc}   | usdt              | Fiat crypto        |
 | [crypto]  |         |                     |                   |                    |
 +-----------+---------+---------------------+-------------------+--------------------+
+| -tt       | float   | -tt                 | 10.0              | Trading threshold  |
+| [percent] |         | {0.0,0.5,1.0,..,19. |                   | percentage, added  |
+|           |         | 0,19.5,20.0}        |                   | to breakeven ratio |
+|           |         |                     |                   | to produce trading |
+|           |         |                     |                   | threshold          |
++-----------+---------+---------------------+-------------------+--------------------+
+| -or       | float   | -or {0.0000}        | 0.0               | Ratio to over ride |
+| [ratio]   |         |                     |                   | trading threshold, |
+|           |         |                     |                   | handy if you want  |
+|           |         |                     |                   | to trade below     |
+|           |         |                     |                   | break even point   |
++-----------+---------+---------------------+-------------------+--------------------+
 | -mf [fee] | float   | -mf {0.0025,0.0015} | 0.0025            | Maximum fee for    |
 |           |         |                     |                   | trading            |
 +-----------+---------+---------------------+-------------------+--------------------+
-| -tf       | float   | -tf                 | 10.0              | Trading factor     |
-| [factor]  |         | {0.0,0.5,1.0,..,9.0 |                   | percentage, added  |
-|           |         | ,9.5,10.0}          |                   | to breakeven ratio |
-|           |         |                     |                   | to produce trading |
-|           |         |                     |                   | threshold          |
+| -e        | switch  | -e                  | disabled          | Email when trading |
 +-----------+---------+---------------------+-------------------+--------------------+
 | -l        | switch  | -l                  | disabled          | Log to a file      |
 +-----------+---------+---------------------+-------------------+--------------------+

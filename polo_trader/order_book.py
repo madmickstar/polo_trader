@@ -183,6 +183,10 @@ def main():
         logger.error(str(err))
         sys.exit(1)
 
+    if args.buy == args.sell:
+        logger.error('Buy and sell cryptos are the same, try again')
+        sys.exit(1)
+        
     # double fee because buy and sell attracts fees
     worst_trade_fee = args.max_fee * 2
      

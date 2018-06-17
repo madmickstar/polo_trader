@@ -19,64 +19,70 @@ class ProfilePairs:
     def __init__(self, polo, worst_trade_fee, prof_dict):
         self.polo = polo
         self.worst_trade_fee = worst_trade_fee
-        #self.sell_coin_long = prof_dict['sell_coin_long']
-        #self.sell_coin_short = prof_dict['sell_coin_short']
-        #self.buy_coin_long = prof_dict['buy_coin_long']
-        #self.buy_coin_short = prof_dict['buy_coin_short']
-        #self.pur_buy_coin_units = float(prof_dict['pur_buy_coin_units'])
-        #self.pur_buy_coin_price = float(prof_dict['pur_buy_coin_price'])
-        #self.pur_sell_coin_units = float(prof_dict['pur_sell_coin_units'])
-        #self.pur_sell_coin_price = float(prof_dict['pur_sell_coin_price'])
-        
         self.sell_coin_long = prof_dict['fsym_name_long']
         self.sell_coin_short = prof_dict['fsym_name_short']
         self.buy_coin_long = prof_dict['tsym_name_long']
         self.buy_coin_short = prof_dict['tsym_name_short']
         self.pur_buy_coin_units = float(prof_dict['fsym_units'])
         self.pur_buy_coin_price = float(prof_dict['fsym_price'])
-        #self.pur_sell_coin_units = float(prof_dict['pur_sell_coin_units'])
         self.pur_sell_coin_price = float(prof_dict['tsym_price'])
-        self.purchase_stats_dict = False
         self.current_stats_dict = False
         self.even_stats_dict = False
- 
-        #print('self.sell_coin_long %s' % self.sell_coin_long) 
+
+        #print('self.sell_coin_long %s' % self.sell_coin_long)
         #print('self.sell_coin_short %s' % self.sell_coin_short)
         #print('self.buy_coin_long %s' % self.buy_coin_long)
         #print('self.buy_coin_short %s' % self.buy_coin_short)
         #print('self.pur_buy_coin_units %s' % self.pur_buy_coin_units)
         #print('self.pur_buy_coin_price %s' % self.pur_buy_coin_price)
         #print('self.pur_sell_coin_price %s' % self.pur_sell_coin_price)
-       
 
-    def get_even_only(self):
+    def get_even_and_targets(self, max_trading_threshold, selling_units):
+        self.max_trading_threshold = max_trading_threshold
+        try:
+            #self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict = self._generate_price()
+            self.current_stats_dict, self.even_stats_dict = self._generate_price()
+        except:
+            raise
+        #self.ratio_increasing = self._is_ratio_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
+        self.lod_targets = self._generate_targets(self.max_trading_threshold, self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict)
+        #return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict, self.lod_targets
+        return self.current_stats_dict, self.even_stats_dict, self.lod_targets
+
+    def get_stats(self):
+        '''
+        Generates purchase, current and break even stats
+        returns tuple of 2 dictionaries (current_stats, break_even_stats)
+        '''
         try:
             return self._generate_price()
         except:
             raise
 
-    def get_even_and_targets(self, max_target_value):
-        self.max_target_value = max_target_value
-        try:
-            self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict = self._generate_price()
-        except:
-            raise
-        self.factor_increasing = self._is_factor_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
-        self.lod_targets = self._generate_targets(self.max_target_value, self.worst_trade_fee, self.factor_increasing, self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict)
-        return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict, self.lod_targets
+    def get_ratio_direction(self, cur_sell_coin_price, cur_buy_coin_price):
+        '''
+        checks if ratio is increasing and returns true or false
+        '''
+        return self._is_ratio_increasing(cur_sell_coin_price, cur_buy_coin_price)
 
-    def get_factor_direction(self, cur_sell_coin_price, cur_buy_coin_price):
-        return self._is_factor_increasing(cur_sell_coin_price, cur_buy_coin_price)
+    def get_targets(self, max_trading_threshold, selling_units, current_stats_dict, even_stats_dict):
+        self.max_trading_threshold = max_trading_threshold
+        self.selling_units = selling_units
+        self.current_stats_dict = current_stats_dict
+        self.even_stats_dict = even_stats_dict
+        self.lod_targets = self._generate_targets(self.max_trading_threshold, self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict)
+        return self.lod_targets
 
-    def _is_factor_increasing(self, cur_sell_coin_price, cur_buy_coin_price):
+
+    def _is_ratio_increasing(self, cur_sell_coin_price, cur_buy_coin_price):
         self.sell_price = cur_sell_coin_price
         self.buy_price = cur_buy_coin_price
         if self.sell_price > self.buy_price:
-            self.factor_increasing = True
+            self.ratio_increasing = True
         else:
-            self.factor_increasing = False
-        return self.factor_increasing
-     
+            self.ratio_increasing = False
+        return self.ratio_increasing
+
 
 
     def _get_orderbook(self, polo, pair, order_type='bid'):
@@ -154,14 +160,14 @@ class ProfilePairs:
         self.formated_date = self.order_book_trade['formated_date']
         self.cur_sell_coin_price = self.order_book_trade['cur_sell_coin_price']
         self.cur_buy_coin_price = self.order_book_trade['cur_buy_coin_price']
-        self.factor_increasing = self._is_factor_increasing(self.cur_sell_coin_price, self.cur_buy_coin_price)
+        self.ratio_increasing = self._is_ratio_increasing(self.cur_sell_coin_price, self.cur_buy_coin_price)
 
         # calc units to sell less fee and total used from selling theose units at current price
         self.units_less_fees = self.pur_buy_coin_units - (self.pur_buy_coin_units * self.worst_trade_fee)
         self.cur_sale_usdt = self.cur_sell_coin_price * self.units_less_fees
 
-        # calc purchase factor and add or subtract worst case fee to get break even factor
-        if self.factor_increasing:
+        # calc purchase ratio and add or subtract worst case fee to get break even ratio
+        if self.ratio_increasing:
             self.pur_factor = self.pur_buy_coin_price / self.pur_sell_coin_price
             self.cur_factor = self.cur_sell_coin_price / self.cur_buy_coin_price
             self.even_factor = self.pur_factor + (self.pur_factor * self.worst_trade_fee)
@@ -179,30 +185,27 @@ class ProfilePairs:
         # calculate even buy coin units
         self.even_buy_coin_units = self.cur_sale_usdt / self.even_buy_coin_price
 
-        self.purchase_stats_dict = {
-            'name': 'purchase',
-            'date': self.formated_date,
-            #'factor': format(self.pur_factor, '.4f'),
-            'factor': round(self.pur_factor, 4),
-            'buy_coin_price': round(self.pur_buy_coin_price, 8),
-            'buy_coin_units': round(self.pur_buy_coin_units, 8),
-            #'buy_coin_price': self.pur_buy_coin_price,
-            #'buy_coin_units': self.pur_buy_coin_units,
-            'buy_coin_short': self.buy_coin_short,
-            'buy_coin_long': self.buy_coin_long,
-            #'sell_coin_price': round(self.pur_sell_coin_price, 4),
-            'sell_coin_price': self.pur_sell_coin_price,
-            'sell_coin_short': self.sell_coin_short,
-        }
+        #self.purchase_stats_dict = {
+        #    'name': 'purchase',
+        #    'date': self.formated_date,
+        #    #'ratio': format(self.pur_factor, '.4f'),
+        #    'ratio': round(self.pur_factor, 4),
+        #    'buy_coin_price': round(self.pur_buy_coin_price, 8),
+        #    'buy_coin_units': round(self.pur_buy_coin_units, 8),
+        #    #'buy_coin_price': self.pur_buy_coin_price,
+        #    #'buy_coin_units': self.pur_buy_coin_units,
+        #    'buy_coin_short': self.buy_coin_short,
+        #    'buy_coin_long': self.buy_coin_long,
+        #    #'sell_coin_price': round(self.pur_sell_coin_price, 4),
+        #    'sell_coin_price': self.pur_sell_coin_price,
+        #    'sell_coin_short': self.sell_coin_short,
+        #}
         self.current_stats_dict = {
             'name': 'current',
             'date': self.formated_date,
-            #'factor': format(self.cur_factor, '.4f'),
-            'factor': round(self.cur_factor, 4),
+            'ratio': round(self.cur_factor, 4),
             'buy_coin_price': round(self.cur_buy_coin_price, 8),
             'buy_coin_units': round(self.cur_buy_coin_units, 8),
-            #'buy_coin_price': self.cur_buy_coin_price,
-            #'buy_coin_units': self.cur_buy_coin_units,
             'buy_coin_short': self.buy_coin_short,
             'buy_coin_long': self.buy_coin_long,
             'sell_coin_price': self.cur_sell_coin_price,
@@ -213,55 +216,52 @@ class ProfilePairs:
         self.even_stats_dict = {
             'name': 'even',
             'date': self.formated_date,
-            #'factor': format(self.even_factor, '.4f'),
-            'factor': round(self.even_factor, 4),
+            'ratio': round(self.even_factor, 4),
             'buy_coin_price': round(self.even_buy_coin_price, 8),
             'buy_coin_units': round(self.even_buy_coin_units, 8),
-            #'buy_coin_price': self.even_buy_coin_price,
-            #'buy_coin_units': self.even_buy_coin_units,
             'buy_coin_short': self.buy_coin_short,
             'buy_coin_long': self.buy_coin_long,
-            #'sell_coin_price': round(self.cur_sell_coin_price, 4),
             'sell_coin_price': self.cur_sell_coin_price,
             'sell_coin_short': self.sell_coin_short,
         }
-        return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict
+        #return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict
+        return self.current_stats_dict, self.even_stats_dict
 
 
-    def _generate_targets(self, max_target_value, worst_trade_fee, factor_increasing, purchase_stats_dict, current_stats_dict, even_stats_dict):
+    def _generate_targets(self, max_trading_threshold, worst_trade_fee, selling_units, current_stats_dict, even_stats_dict):
 
-        self.max_target_value = max_target_value
+        self.max_trading_threshold = max_trading_threshold
         self.trade_fee = worst_trade_fee / 2
-        self.factor_increasing = factor_increasing
-        self.pur = purchase_stats_dict
+        self.selling_units = selling_units
         self.curr = current_stats_dict
         self.even = even_stats_dict
         self.lod_targets = []
+        self.ratio_increasing = self._is_ratio_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
 
-        # first add even target
+        # first add even target to list
         self.even_target =  self.even
         self.even_target['name'] = 0.0
         self.lod_targets.append(self.even_target)
 
         # then loop in the rest of the targets
         self.count = 0.0
-        # estimate total from sell - based on units to sell and current sell price
-        self.sell_total = self.curr['sell_coin_price'] * (self.pur['buy_coin_units']-(self.pur['buy_coin_units'] * self.trade_fee))
-        while (self.count < self.max_target_value):
+        # estimate total from sell - based on units to sell (less the fee) and current selling price
+        self.sell_total = self.curr['sell_coin_price'] * (self.selling_units - (self.selling_units * self.trade_fee))
+        while (self.count < self.max_trading_threshold):
             self.count = self.count + 0.5
-            self.factor_adjustment = self.even['factor'] * self.count * 0.01
-            if self.factor_increasing:
-                self.target_factor = self.even['factor'] + self.factor_adjustment
+            self.factor_adjustment = self.even['ratio'] * self.count * 0.01
+            if self.ratio_increasing:
+                self.target_factor = self.even['ratio'] + self.factor_adjustment
                 self.target_buy_coin_price = self.curr['sell_coin_price'] / self.target_factor
             else:
-                self.target_factor = self.even['factor'] - self.factor_adjustment
+                self.target_factor = self.even['ratio'] - self.factor_adjustment
                 self.target_buy_coin_price = self.curr['sell_coin_price'] * self.target_factor
 
             self.target_buy_coin_units = self.sell_total / self.target_buy_coin_price
             self.current_target_dict = {
                 'name': self.count,
                 'date': current_stats_dict['date'],
-                'factor': self.target_factor,
+                'ratio': round(self.target_factor, 8),
                 'buy_coin_price': round(self.target_buy_coin_price, 8),
                 'buy_coin_units': round(self.target_buy_coin_units, 8),
                 'buy_coin_short': current_stats_dict['buy_coin_short'],
@@ -369,14 +369,19 @@ class JsonProfiles:
             'fsym_units': 1,
             'fsym_price': 1,
         }
-        
+
         # profile pair
         self.mycoins = ProfilePairs(self.polo, self.worst_trade_fee, self.prof_dict)
         # get current stats only dont care for other two dics it returns
-        dont_care_dic1, self.current_stats_dict, dont_care_dic2 = self.mycoins.get_even_only()
+        try:
+            #dont_care_dic1, self.current_stats_dict, dont_care_dic2 = self.mycoins.get_stats()
+            self.current_stats_dict, dont_care_dic2 = self.mycoins.get_stats()
+        except:
+            raise
+
         # build json update
         self.json_update = {
-                      'ratio': format(self.current_stats_dict['factor'], '.4f'),
+                      'ratio': format(self.current_stats_dict['ratio'], '.4f'),
                       'tsym_price': format(self.current_stats_dict['buy_coin_price'], '.8f'),
                       'tsym_units': '1',
                       'tsym_name_short': self.prev_trade['tsym_name_short'],
@@ -390,10 +395,10 @@ class JsonProfiles:
         # update json dictionary
         self.json_data_updated = self._update_json_dict(self.json_data_complete, self.pair_list_prev, self.json_update)
         #logger.info('JSON missing syms - updating new sym based on current order book prices and ratio')
-       
+
         #write JSON dictionary to file
         self._write_json_data(self.json_data_updated)
-        
+
         return self.json_data_updated
 
 
@@ -506,13 +511,13 @@ class JsonProfiles:
         self.tsym = pair_list['tsym']
 
         self.trading_pairs = '{}_{}_{}'.format(self.fsym.upper(), self.fiat.upper(), self.tsym.upper())
-        
+
         self.result_dict = {
             'error': True,
             'result': None,
             'sym': None,
         }
-        
+
         if not self.fsym in self.json_data_complete:
             self.result_dict['result'] = "No previous trade for {} in JSON - Missing SELL symbol {}".format(self.trading_pairs, self.fsym.upper())
             self.result_dict['sym'] = "fsym"

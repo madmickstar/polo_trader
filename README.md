@@ -71,7 +71,7 @@ private_key = 'your_private_key_here'
 Usage Polo Trader
 -----------------
 ```
-polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -tf {0.0,..,10.0} | -l | -t | -d | -h | --version ] 
+polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -tt {0.0,..,20.0} | -or {0.0000} | -mf {0.0025, 0.0015} | -e | -l | -t | -d | -h | --version ] 
 ```
 
 Argument  | Type   | Format               | Default           | Description
@@ -79,8 +79,10 @@ Argument  | Type   | Format               | Default           | Description
 -s [crypto] | string | -s {xrp,str,nxt,eth,btc} | xrp | Selling crypto
 -b [crypto] | string | -b {str,xrp,nxt,eth,btc} | str | Buying crypto
 -f [crypto] | string | -f {usdt,eth,btc} | usdt | Fiat crypto
+-tt [percent] | float | -tt {0.0,0.5,1.0,..,19.0,19.5,20.0} | 10.0 | Trading threshold percentage, added to breakeven ratio to produce trading threshold
+-or [ratio] | float | -or {0.0000} | 0.0 | Ratio to over ride trading threshold, handy if you want to trade below break even point
 -mf [fee] | float | -mf {0.0025,0.0015} | 0.0025 | Maximum fee for trading
--tf [factor] | float | -tf {0.0,0.5,1.0,..,9.0,9.5,10.0} | 10.0 | Trading factor percentage, added to breakeven ratio to produce trading threshold
+-e | switch | -e | disabled | Email when trading
 -l | switch | -l | disabled | Log to a file
 -t | switch | -t | disabled | Timestamp output
 -d | switch | -d | disabled | Enables debug output to console
