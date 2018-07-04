@@ -45,6 +45,7 @@ def process_cli(max_trading_threshold):
         python polo_trade.py -s xrp -b nxt -tt 5 \n \
         ''',
     formatter_class=RawTextHelpFormatter)
+    #g1 = parser.add_mutually_exclusive_group()
     parser.add_argument('-s', '--sell',
         default='xrp',
         choices=['xrp', 'str', 'nxt', 'eth', 'btc'],
@@ -66,11 +67,16 @@ def process_cli(max_trading_threshold):
         choices=map(lambda x: x/10.0, range(0, mtt, 5)),
         metavar=('{0.5, 1.0, .. 19.5, 20.0}'),
         help='Trade threshold percentage, default = 10.0')
-    parser.add_argument('-or', '--override_ratio',
+    parser.add_argument('-r', '--ratio_override',
         default='0.0000',
         type=float,
         metavar=('xx.xxxx'),
-        help='Ratio to override trade threshold, default = 0.0000')
+        help='Ratio to override trade threshold, default = 0.0000 therefore disabled')
+    parser.add_argument('-u', '--units_override',
+        default='0',
+        type=int,
+        metavar=('{1..something ridiculous}'),
+        help='Units to override last traded units, default = 0 therefore disabled')
     parser.add_argument('-mf', '--max_fee',
         default='0.0025',
         type=float,
@@ -82,6 +88,18 @@ def process_cli(max_trading_threshold):
         choices=range(1, 11),
         metavar=('{1..10}'),
         help='Threshold to detect if sell and buy coins are around the wrong way, default = 2')
+    parser.add_argument('-ss', '--spike_suppress',
+        default='3',
+        type=int,
+        choices=range(1, 11),
+        metavar=('{1..10}'),
+        help='Amount of consecutive times ratio needs to be evaluated above threshold before triggering trading, disable = 1, default = 3')
+    parser.add_argument('-ph', '--print_headers',
+        default='20',
+        type=int,
+        choices=range(10, 51),
+        metavar=('{1..50}'),
+        help='Print headers to screen frequency, default = 20')
     parser.add_argument('-e', '--email_updates',
         action="store_true",
         help='Email when trading is triggered and rsults at the end of trade')
@@ -235,7 +253,7 @@ def print_balances(avail_balances_lod):
             print(' %s |' % filler)
 
 
-def print_header(ratio_increasing, current_stats_dict, target_dict, override_ratio):
+def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_override):
     logger = logging.getLogger(__name__)
     date_stamp = current_stats_dict['date']
     #date_formatted = (date_stamp[0:4] + "-" + date_stamp[4:6] + "-" + date_stamp[6:8]).center(10)
@@ -251,8 +269,8 @@ def print_header(ratio_increasing, current_stats_dict, target_dict, override_rat
     else:
         #factor = "Factor    Downward".center(25)
         direction = "Down"
-    if override_ratio:
-        factor = '{:^9}{:^10}{:^7.4f}'.format("Ratio " + direction, "override", override_ratio)
+    if ratio_override:
+        factor = '{:^9}{:^10}{:^7.4f}'.format("Ratio " + direction, "override", ratio_override)
     else:
         factor = '{:^26}'.format("Ratio " + direction)
     #units = ("%s    Threshold = %s%s" % ("Units", target_dict['name'],"%")).center(31)
@@ -336,35 +354,7 @@ def generate_test_trade_data(fsym):
         }
     return trading_status
 
-
-#def calc_target(trade_threshold, lod_targets):
-#    '''
-#    evaluate if trade threshold has been met and start trading
-#    '''
-#    logger = logging.getLogger(__name__)
-#    # threshold list of factors to match against
-#    lol_factors_to_match = []
-#    for x in lod_targets:
-#         lol_factors_to_match.append([x['name'], x['buy_coin_price'], x['ratio'], x['buy_coin_units']])
-#
-#    target_dict = {
-#        'error': True,
-#    }
-#
-#    for x in lol_factors_to_match:
-#        if float(trade_threshold) in (x[0],):
-#            target_dict = {
-#                'name': x[0],
-#                'buy_coin_price': x[1],
-#                'ratio': x[2],
-#                'buy_coin_units': x[3],
-#                'error': False,
-#            }
-#            #logger.debug("calc_target matched %s" % target_dict)
-#            break
-#    return target_dict
-
-
+    
 # optimised function
 def calc_target(trade_threshold, lod_targets):
     '''
@@ -393,54 +383,6 @@ def calc_target(trade_threshold, lod_targets):
     return target_dict
 
 
-#def eval_trading(ratio_increasing, trade_threshold, current_factor, lod_targets):
-#    '''
-#    evaluate if trade threshold has been met and start trading
-#    '''
-#    logger = logging.getLogger(__name__)
-#
-#    # threshold list of factors to match against
-#    lol_factors_to_match = []
-#    for x in lod_targets:
-#        logger.debug('%s %s' % (x['name'], x['ratio']))
-#        lol_factors_to_match.append([x['name'], x['ratio']])
-#
-#    for x in lol_factors_to_match:
-#        if float(trade_threshold) in x:
-#            if ratio_increasing:
-#                if current_factor > x[1]:
-#                    #logger.debug("eval_trading matched %s" % x[1])
-#                    return True
-#            else:
-#                if current_factor < x[1]:
-#                    return True
-#    return False
-
-## optimised function
-#def eval_trading(ratio_increasing, trade_threshold, current_factor, lod_targets):
-#    '''
-#    evaluate if trade threshold has been met
-#    return true if ready to start trading, false otherwise
-#    '''
-#    logger = logging.getLogger(__name__)
-#
-#    for x in lod_targets:
-#        logger.debug("%s %s %s" % (trade_threshold, x['name'], x['ratio']))
-#        if float(trade_threshold) in (x['name'],):
-#            logger.debug("eval_trading matched %s" % x['ratio'])
-#            if ratio_increasing:
-#                if current_factor > x['ratio']:
-#                    #logger.debug("factor increasing %s %s" % (x['ratio'], trade_threshold))
-#                    return True
-#            else:
-#                if current_factor < x['ratio']:
-#                    #logger.debug("factor decreasing %s %s" % (x['ratio'], trade_threshold))
-#                    return True
-#            return False
-#    logger.error("Whilst evaluating if ready to trade, trade threshold %s could not be matched" % trade_threshold)
-#    return False
-
-# simplified function
 def eval_trading(ratio_increasing, current_ratio, target_ratio):
    '''
    checks if the ratio is above or below target ratio
@@ -455,7 +397,11 @@ def eval_trading(ratio_increasing, current_ratio, target_ratio):
 
    
     
-
+def factor_increasing(cur_sell_coin_price, cur_buy_coin_price):
+    if cur_sell_coin_price > cur_buy_coin_price:
+        return True
+    else:
+        return False
     
     
     
@@ -839,18 +785,31 @@ def main():
     }
 
     # check if over ride ratio is default
-    if args.override_ratio == 0:
-        override_ratio = False
-        logger.debug('Override ratio is Disabled')
+    if args.ratio_override == 0:
+        ratio_override = False
+        logger.debug('Override ratio is disabled')
     else:
-        override_ratio = round(args.override_ratio, 4)
-        logger.debug('Overriding trading threshold with %.4f' % override_ratio)    
+        ratio_override = round(args.ratio_override, 4)
+        logger.debug('Overriding trading threshold with %.4f' % ratio_override)    
+        
+        
+    # check if over ride units is default
+    if args.units_override == 0:
+        units_override = False
+        logger.debug('Override units is disabled')
+    else:
+        units_override = args.units_override
+        logger.debug('Overriding units with %s' % units_override)  
+        
     
     # double fee because buying and selling attracts fees for both trades
     worst_trade_fee = args.max_fee * 2
     trade_threshold = args.trade_threshold
     
     email_me_updates = args.email_updates
+    spike_suppress = args.spike_suppress  
+    print_headers = args.print_headers
+        
 
     status_json_file = 'trade_status.json'
     trades_json_file = 'polo_trader_trades.json'
@@ -889,8 +848,7 @@ def main():
     # grabbing the last trade details and profiling
     trading_status['flip_coins'] = True
 
-    # this is the main loop
-    header_counter = 20
+
     while True:
         '''
         if its the first time to loop or first time since completing a sell / buy trade
@@ -949,8 +907,16 @@ def main():
                 'tsym_units': float(t['fsym_units']),
             }
 
+            # if over ride units are provided - change the units to sell
+            if units_override:
+                trading_pairs['fsym_units'] = units_override
+            
             tp = trading_pairs
-            break_even_ratio = tp['ratio'] + (tp['ratio'] * worst_trade_fee)
+            if factor_increasing(tp['fsym_price'], tp['tsym_price']):
+                break_even_ratio = tp['ratio'] + (tp['ratio'] * worst_trade_fee)
+            else:
+                break_even_ratio = tp['ratio'] - (tp['ratio'] * worst_trade_fee)
+
             logger.debug('')
             logger.debug('##### Current Trade #####')
             logger.debug('Selling %s units of %s' % (tp['fsym_units'], tp['fsym_name_long']))
@@ -984,10 +950,14 @@ def main():
             refresh_targets = True
             # enable evaluate trading status
             trading_status['eval_trading'] = True
+            # zero trade threshold spike suppressor
+            spike_suppress_counter = 0
+            # force headers to print after trade
+            print_headers_counter = print_headers
             
 
         # just a little debugging to screen
-        #logger.debug('header counter %s' % header_counter)
+        #logger.debug('header counter %s' % print_headers_counter)
 
         # profile the trading pair
         mycoins = ProfilePairs(polo, worst_trade_fee, trading_pairs)
@@ -1021,26 +991,10 @@ def main():
                 updated_buy_coin_price = current_stats_dict['sell_coin_price'] * target_dict['ratio']
             target_dict['buy_coin_price'] = round(updated_buy_coin_price,8)
 
-        #try:
-        #    purchase_stats_dict, current_stats_dict, even_stats_dict, lod_targets = mycoins.get_even_and_targets(max_trading_threshold, trading_pairs['fsym_units'])
-        #except RuntimeError, err:
-        #    logger.error(str(err))
-        #    continue
-        #except Exception, err:
-        #    traceback.print_exc()
-        #    continue
 
-        #ratio_increasing = mycoins.get_ratio_direction(current_stats_dict['sell_coin_price'], current_stats_dict['buy_coin_price'])
-        ##logger.debug('checking factor direction %s %s result %s' % (current_stats_dict['sell_coin_price'], current_stats_dict['buy_coin_price'], ratio_increasing))
-        #target_dict = calc_target(trade_threshold, lod_targets)
-
-
-        #print target_dict
-
-
-        header_counter += 1
+        print_headers_counter += 1
         try:
-            if header_counter > 20:
+            if print_headers_counter > print_headers:
                 ''' print balances '''
                 avail_balances_lod = get_balances(polo)
                 if not avail_balances_lod['error']:
@@ -1054,8 +1008,8 @@ def main():
                 if open_orders_dict['error']:
                     logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
                 ''' print column headers '''
-                print_header(ratio_increasing, current_stats_dict, target_dict, override_ratio)
-                header_counter = 0
+                print_header(ratio_increasing, current_stats_dict, target_dict, ratio_override)
+                print_headers_counter = 0
             ''' print results '''
             print_some_results(ratio_increasing, current_stats_dict, even_stats_dict, target_dict)
         except IOError:
@@ -1075,34 +1029,29 @@ def main():
 
         '''
         Check if ready to start trading
-        '''
-        # check if orders have been placed
-        #if not trading_status['buy_order_placed'] and not trading_status['sell_order_placed']:
-        
-        # check if evaluate trading is enabled
-        #if trading_status['eval_trading']:
-        #    ## check if hit break even point, if over, evaluate how far over and if it matches target
-        #    #if ratio_increasing:
-        #    #    if current_stats_dict['ratio'] > even_stats_dict['ratio']:
-        #    #        trading_status['trading'] = eval_trading(ratio_increasing, trade_threshold, current_stats_dict['ratio'], lod_targets)
-        #    #else:
-        #    #    if current_stats_dict['ratio'] < even_stats_dict['ratio']:
-        #    #        trading_status['trading'] = eval_trading(ratio_increasing, trade_threshold, current_stats_dict['ratio'], lod_targets)
-        #            
-        #    #if ratio_increasing:
-        #    #    if current_stats_dict['ratio'] >= target_dict['ratio']:
-        #    #        trading_status['trading'] = True
-        #    #    #elif current_stats_dict['ratio'] >= override_ratio
-        #    #else:
-        #    #    if current_stats_dict['ratio'] <= target_dict['ratio']:
-        #    #        trading_status['trading'] = True
-        
+        '''       
         # check if evaluate trading is enabled
         if trading_status['eval_trading']:
-            if override_ratio:
-                trading_status['trading'] = eval_trading(ratio_increasing, current_stats_dict['ratio'], override_ratio)
+            # evaluate if ratio has hit threshold
+            if ratio_override:
+                trading_status['trading'] = eval_trading(ratio_increasing, current_stats_dict['ratio'], ratio_override)
             else:
                 trading_status['trading'] = eval_trading(ratio_increasing, current_stats_dict['ratio'], target_dict['ratio'])
+
+            # increment spike suppress counter if trading is enabled
+            if trading_status['trading']:     
+                spike_suppress_counter += 1
+                logger.debug('Trade threshold met %s / %s' % (spike_suppress_counter, spike_suppress))
+            else:
+                spike_suppress_counter = 0
+                
+            # start trading if spike suppress counter is >= to spike suppress value
+            if spike_suppress_counter >= spike_suppress:
+                trading_status['trading'] = True
+                # suppress headers from printing when trading is triggered
+                print_headers_counter = 0
+            else:
+                trading_status['trading'] = False
            
 
         '''
@@ -1115,8 +1064,8 @@ def main():
                    
             # this variable only needs to be set the first time round, for use when emailing
             if trading_status['sell_counter'] == 0:
-                if override_ratio:
-                    target_ratio = override_ratio
+                if ratio_override:
+                    target_ratio = ratio_override
                 else:
                     target_ratio = target_dict['ratio']
                 logger.debug('Target ratio %s - current ratio %s - Trading triggered' % (target_ratio, current_stats_dict['ratio']))
@@ -1335,7 +1284,11 @@ def main():
                     trade_threshold = 10
 
                 # Disable override ratio. If enabled it will trigger a trade immediately
-                override_ratio = False
+                ratio_override = False
+                # Disable override units. No need for override after a trade is complete
+                units_override = False
+                
+                
                 
                 
         '''
@@ -1343,7 +1296,7 @@ def main():
         over ride trading ratio - done
         over ride selling units
         sell only
-        email when trading
+        email when trading - done
         
         '''
 

@@ -26,7 +26,7 @@ def get_current_tickers(polo, sell_coin, buy_coin):
     }
     return tickers_dict
 
-    
+
 def get_orderbook(polo, pair, order_type='bid'):
     '''
     retrieve orderbook and return list of dictionaries
@@ -41,17 +41,17 @@ def get_orderbook(polo, pair, order_type='bid'):
             'error': err,
         }
         return result_dict
-        
+
     current_orders = []
     # first check the list returned is not empty
     if len(results) > 0:
         if order_type=='bid':
             for a in results['bids']:
                 current_orders.append([a[0], a[1]])
-        elif order_type=='ask':   
-            if int(results['isFrozen']) > 0:  
+        elif order_type=='ask':
+            if int(results['isFrozen']) > 0:
                 print('\n%s Asks order book is frozen  - value is %s' % (pair, results['isFrozen']))
- 
+
             for a in results['asks']:
                 current_orders.append([a[0], a[1]])
 
@@ -84,7 +84,7 @@ def get_balances(polo):
             'error': err,
         }
         return result_dict
-        
+
     avail_balances_lod = []
     # first check the list returned is not empty
     if len(results) > 0:
@@ -102,7 +102,7 @@ def get_balances(polo):
         'error': False,
     }
     return result_dict
-    
+
 
 def get_coin_balance(polo, coin):
     '''
@@ -136,8 +136,8 @@ def get_coin_balance(polo, coin):
         'error': False,
     }
     return result_dict
-    
-    
+
+
 def get_open_orders(polo):
     #logger = logging.getLogger(__name__)
     try:
@@ -145,6 +145,7 @@ def get_open_orders(polo):
         #logger.debug("I have %s open orders for USDT_XRP!" % open_orders['USDT_XRP'])
         #logger.debug("I have %s open orders for USDT_STR!" % open_orders['USDT_STR'])
         #I have [{u'orderNumber': u'48338784953', u'margin': 0, u'amount': u'566.10099057', u'rate': u'0.46896141', u'date': u'2018-01-11 03:57:54', u'total': u'265.47951874', u'type': u'buy', u'startingAmount': u'566.10099057'}] open orders for USDT_STR!
+
     except Exception as err:
         #logger.error('get_open_orders - Could not get open orders - %s' % err)
         result_dict = {
@@ -153,23 +154,27 @@ def get_open_orders(polo):
         }
         return result_dict
 
-    coin_list = ['USDT_XRP', 'USDT_STR']
+    #orders_list = []
+    #coin_list = ['USDT_XRP', 'USDT_STR']
     orders_found = False
     order_list = []
     order_sell_count = 0
     order_buy_count = 0
-    for coin in (coin_list):
-        if len(open_orders[coin]) > 0:
+
+    for crypto_pair in open_orders:
+        if len(open_orders[crypto_pair]) > 0:
+            # process only crypto pairs with open orders
             orders_found = True
-            for x in range(len(open_orders[coin])):
-                date_dict = date_conversions(open_orders[coin][x]['date'])
+            for order in open_orders[crypto_pair]:
+                # store all orders associated with crypto pair
+                date_dict = date_conversions(order['date'])
                 coin_dict = {
-                   'coin_name': coin,
-                   'type': open_orders[coin][x]['type'],
-                   'order_number': open_orders[coin][x]['orderNumber'],
-                   'amount': open_orders[coin][x]['amount'],
-                   'rate': open_orders[coin][x]['rate'],
-                   'total': open_orders[coin][x]['total'],
+                   'coin_name': crypto_pair,
+                   'type': order['type'],
+                   'order_number': order['orderNumber'],
+                   'amount': order['amount'],
+                   'rate': order['rate'],
+                   'total': order['total'],
                    'local_timestamp': date_dict['local_time_stamp'],
                    'local_epoch': date_dict['local_epoch'],
                 }
@@ -179,8 +184,33 @@ def get_open_orders(polo):
                 if coin_dict['type'] == "buy":
                     order_buy_count += 1
 
+
+    #
+    #for coin in (coin_list):
+    #    if len(open_orders[coin]) > 0:
+    #        orders_found = True
+    #        for x in range(len(open_orders[coin])):
+    #            date_dict = date_conversions(open_orders[coin][x]['date'])
+    #            coin_dict = {
+    #               'coin_name': coin,
+    #               'type': open_orders[coin][x]['type'],
+    #               'order_number': open_orders[coin][x]['orderNumber'],
+    #               'amount': open_orders[coin][x]['amount'],
+    #               'rate': open_orders[coin][x]['rate'],
+    #               'total': open_orders[coin][x]['total'],
+    #               'local_timestamp': date_dict['local_time_stamp'],
+    #               'local_epoch': date_dict['local_epoch'],
+    #            }
+    #            order_list.append(coin_dict)
+    #            if coin_dict['type'] == "sell":
+    #                order_sell_count += 1
+    #            if coin_dict['type'] == "buy":
+    #                order_buy_count += 1
+    #
+    #print order_list
+
     result_dict = {
-        'result': open_orders,
+        #'result': open_orders,
         'error': False,
         'orders_found': orders_found,
         'order_list': order_list,
@@ -189,9 +219,9 @@ def get_open_orders(polo):
 
     }
     return result_dict
-    
-    
-    
+
+
+
 def get_trade_ordernumber(polo, order_number):
     #logger = logging.getLogger(__name__)
     try:
@@ -213,10 +243,8 @@ def get_trade_ordernumber(polo, order_number):
         'error': False,
     }
     return result_dict
-    
-    
-    
- 
+
+
 
 def get_trade_history(polo, pair="USDT_XRP", start=None):
     #logger = logging.getLogger(__name__)
@@ -232,8 +260,8 @@ def get_trade_history(polo, pair="USDT_XRP", start=None):
             'error': err,
         }
         return result_dict
-    
-    # cant figure why this is here, suspect copied from somewhere else    
+
+    # cant figure why this is here, suspect copied from somewhere else
     # has no point because gets over written by code below
     result_dict = {
         'result': result,
@@ -250,4 +278,3 @@ def get_trade_history(polo, pair="USDT_XRP", start=None):
         'error': False,
     }
     return result_dict
- 
