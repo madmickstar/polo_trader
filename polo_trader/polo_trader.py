@@ -73,9 +73,9 @@ def process_cli(max_trading_threshold):
         metavar=('xx.xxxx'),
         help='Ratio to override trade threshold, default = 0.0000 therefore disabled')
     parser.add_argument('-u', '--units_override',
-        default='0',
-        type=int,
-        metavar=('{1..something ridiculous}'),
+        default='0.0000',
+        type=float,
+        metavar=('{xx.xxx}'),
         help='Units to override last traded units, default = 0 therefore disabled')
     parser.add_argument('-mf', '--max_fee',
         default='0.0025',
@@ -108,7 +108,7 @@ def process_cli(max_trading_threshold):
         help='Enable logging to a file')
     parser.add_argument('-t', '--timestamp',
         action="store_true",
-        help='Enable timestamping log output to console')
+        help='Enable timestamping all output to console')
     parser.add_argument('-d', '--debug',
         action="store_true",
         help='Enable debug output to console')
@@ -141,22 +141,30 @@ def configure_logging(args):
         logging: logging configuration
     """
     if args.debug:
-        logging.basicConfig(stream=sys.stdout,
-                            #level=logging.INFO,
-                            level=logging.DEBUG,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            format='%(message)s')
-                            #format='[%(asctime)s] [%(levelname)-5s] [%(name)s] %(message)s')
+        if args.timestamp:    
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.DEBUG,
+                                datefmt='%Y-%m-%d %H:%M:%S',
+                                format='[%(asctime)s] %(message)s')
+        else:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.DEBUG,
+                                format='%(message)s')
+                                #format='[%(asctime)s] [%(levelname)-5s] [%(name)s] %(message)s')
         print_args(args)
-    elif args.timestamp:
-        logging.basicConfig(stream=sys.stdout,
-                            level=logging.INFO,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            format='[%(asctime)s] %(message)s')
+
     else:
-        logging.basicConfig(stream=sys.stdout,
-                            level=logging.INFO,
-                            format='%(message)s')
+        if args.timestamp:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.INFO,
+                                datefmt='%Y-%m-%d %H:%M:%S',
+                                format='[%(asctime)s] %(message)s')
+        else:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.INFO,
+                                format='%(message)s')
+                                
+    # whitelist moduels that are aloud to log to screen                            
     for handler in logging.root.handlers:
         handler.addFilter(Whitelist('__main__', 'polo_tools', 'polo_gets', 'polo_sell_buy'))
     return logging
@@ -212,9 +220,14 @@ def print_balances(avail_balances_lod):
     print available balances
     '''
     logger = logging.getLogger(__name__)
+    
+    #logger.debug('%s' % avail_balances_lod)
+    #avail_balances_lod.append({'units': 0.999999999, 'name': u'USDT'})
+    
     w = [23, 24, 25, 31]
     if len(avail_balances_lod) > 0:
-        logger.info('|-------------------------+---------------------------+----------------------------+----------------------------------|')
+        header_divider = '|-------------------------+---------------------------+----------------------------+----------------------------------|'
+        logger.info('%s' % header_divider)
         count = 0
         for bal in avail_balances_lod:
             count += 1
@@ -226,16 +239,16 @@ def print_balances(avail_balances_lod):
                 column_width = w[2]
             elif count == 4:
                 column_width = w[3]
-            #coin_display = ('%s %8.8f' % (bal['name'], bal['units'])).center(column_width)
             coin_units = '{:.8f}'.format(bal['units'])
             coin_display = '{:{align}{width}}'.format(bal['name']+ " " + coin_units, align='^', width=column_width)
             if count == 1:
-                print('| %s |' % coin_display),
+                balances_header = '| {} | '.format(coin_display)
             elif count <=3:
-                print(' %s |' % coin_display),
+                balances_header = balances_header + ' {} | '.format(coin_display)
             else:
-                print(' %s |' % coin_display)
                 count = 0
+                balances_header = balances_header + ' {} |'.format(coin_display)
+                logger.info('%s' % balances_header)
 
         # add filler to header if it wasnt the last balance in a row of four
         if count > 0:
@@ -250,8 +263,10 @@ def print_balances(avail_balances_lod):
                 if counter == 0:
                     break
             filler = '{:{align}{width}}'.format("",align='^',width=combined_width)
-            print(' %s |' % filler)
+            balances_header = balances_header + ' {} |'.format(filler)
+            logger.info('%s' % balances_header)
 
+            
 
 def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_override):
     logger = logging.getLogger(__name__)
@@ -270,7 +285,7 @@ def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_overri
         #factor = "Factor    Downward".center(25)
         direction = "Down"
     if ratio_override:
-        factor = '{:^9}{:^10}{:^7.4f}'.format("Ratio " + direction, "override", ratio_override)
+        factor = '{:^10}{:^10}{:^6.4f}'.format("Ratio " + direction, "override", ratio_override)
     else:
         factor = '{:^26}'.format("Ratio " + direction)
     #units = ("%s    Threshold = %s%s" % ("Units", target_dict['name'],"%")).center(31)
@@ -285,6 +300,7 @@ def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_overri
     logger.info('| %s | %s | %s | %s |' % (h1, h2, h3, h4))
     logger.info('|-------------------------+---------------------------+----------------------------+----------------------------------|')
 
+    
 
 def print_some_results(ratio_increasing, current_stats_dict, even_stats_dict, target_dict):
     '''
@@ -292,13 +308,6 @@ def print_some_results(ratio_increasing, current_stats_dict, even_stats_dict, ta
     '''
     logger = logging.getLogger(__name__)
     time_stamp = current_stats_dict['date'][-6:]
-    #time_formatted = (time_stamp[0:2] + ":" + time_stamp[2:4] + ":" + time_stamp[4:6]).center(10)
-    #sell_coin = ("%7.4f" % current_stats_dict['sell_coin_price']).center(7)
-    #buy_coin = ("c%7.4f  e%7.4f  t%7.4f" % (current_stats_dict['buy_coin_price'], even_stats_dict['buy_coin_price'], target_dict['buy_coin_price'])).center(28)
-    #factor = ("c%6.3f  e%6.3f  t%6.3f" % (current_stats_dict['ratio'], even_stats_dict['ratio'], target_dict['ratio'])).center(25)
-    #units = ("c%8.3f  e%8.3f  t%8.3f" % (current_stats_dict['buy_coin_units'], even_stats_dict['buy_coin_units'], target_dict['buy_coin_units'])).center(29)
-
-    #time_formatted = '{:^10}'.format(time_stamp[0:2] + ":" + time_stamp[2:4] + ":" + time_stamp[4:6])
     time_formatted = '{}'.format(time_stamp[0:2] + ":" + time_stamp[2:4] + ":" + time_stamp[4:6])
     sell_coin = '{:^11} {:^11.6f}'.format(time_formatted, current_stats_dict['sell_coin_price'])
     buy_coin = '{:^12.6f} {:^12.6f}'.format(current_stats_dict['buy_coin_price'], target_dict['buy_coin_price'])
@@ -361,12 +370,10 @@ def calc_target(trade_threshold, lod_targets):
     Match trading threshold to a row in list of target and return
     trading threshold details
     '''
-    logger = logging.getLogger(__name__)
-
+    # logger = logging.getLogger(__name__)
     target_dict = {
         'error': True,
     }
-
     # cycle through list of dict targets threshold and extract match
     for x in lod_targets:
         #logger.debug("target to match %s" % x['name'])
@@ -443,23 +450,17 @@ def generate_stats(current_stats_dict, even_stats_dict, units, trading_status):
         x = "Selling"
     else:
         x = "Buying"
-    #logger.debug('%s - ================= PURCHASE STATS ==========================' % x)
+
     ##logger.debug('%s - %s' % (x, purchase_stats_dict))
-    #logger.debug('%s - %s Name %s Factor %s' % (x, purchase_stats_dict['date'], purchase_stats_dict['name'], purchase_stats_dict['ratio']))
-    #logger.debug('%s - %s Price %s Units %s' % (x, purchase_stats_dict['sell_coin_short'], purchase_stats_dict['buy_coin_price'], purchase_stats_dict['buy_coin_units']))
-    #logger.debug('%s - %s Price %s Pair %s' % (x, purchase_stats_dict['buy_coin_short'], purchase_stats_dict['sell_coin_price'], purchase_stats_dict['buy_coin_long']))
     logger.debug('%s - ================== CURRENT STATS ==========================' % x)
     ##logger.debug('%s - %s' % (x, current_stats_dict))
     logger.debug('%s - %s Name %s Factor %s' % (x, current_stats_dict['date'], current_stats_dict['name'], current_stats_dict['ratio']))
     logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['sell_coin_short'], current_stats_dict['sell_coin_price'], current_stats_dict['sell_coin_units'], current_stats_dict['sell_coin_long']))
     logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['buy_coin_short'], current_stats_dict['buy_coin_price'], current_stats_dict['buy_coin_units'], current_stats_dict['buy_coin_long']))
     logger.debug('%s - ================== EVEN STATS =============================' % x)
-    #logger.debug('%s - %s' % (x, even_stats_dict))
     logger.debug('%s - %s Name %s Factor %s' % (x, even_stats_dict['date'], even_stats_dict['name'], even_stats_dict['ratio']))
     logger.debug('%s - %s Price %s' % (x, even_stats_dict['sell_coin_short'], even_stats_dict['sell_coin_price']))
     logger.debug('%s - %s Price %s Units %s Pair %s' % (x, even_stats_dict['buy_coin_short'], even_stats_dict['buy_coin_price'], even_stats_dict['buy_coin_units'], even_stats_dict['buy_coin_long']))
-    #logger.debug('Buying - ==================TARGETS================================')
-    #logger.debug('Buying - %s' % lod_targets)
     logger.debug('%s - =========================================================' % x)
     buy_total_value = current_stats_dict['buy_coin_price'] * current_stats_dict['buy_coin_units']
     if trading_status['type'] == "sell":
@@ -470,8 +471,6 @@ def generate_stats(current_stats_dict, even_stats_dict, units, trading_status):
         logger.debug('Buying - My balance of %s is %s' % (trading_status['fiat'], units))
         logger.debug('Buying - My estimation of %s was %s' % (trading_status['fiat'], buy_total_value))
         logger.debug('Buying - Buying %s units of %s at %s' % (current_stats_dict['buy_coin_units'], current_stats_dict['buy_coin_long'], current_stats_dict['buy_coin_price']))
-        #logger.debug('Buying - Time to buy, get order number and change status to buy once successfully sold')
-        #logger.debug('Buying - reset buy counter')
 
 
 
@@ -501,15 +500,19 @@ def validate_trade_units(current_stats_dict, units, trading_status):
             logger.error('Buying - Total %s %s estimated %s - changing buying values based on real %s total' % (trading_status['fiat'], wallet_total, buy_total_value, trading_status['fiat']))
             logger.debug('Buying - Corrected buying %s units of %s at %s due to balance being %s %s and estimated total was %s %s' % (validated_units, current_stats_dict['buy_coin_long'], current_stats_dict['buy_coin_price'], wallet_total, trading_status['fiat'], buy_total_value, trading_status['fiat']))
         else:
-            # If purchase total is less than whats in wallet, chances are sell trade yielded more than expected
+            # If wallet has more than expected sell trade value, chances are sell trade yielded more than expected
             # unless the extra funds were there before the trade, so to take caution, will only use extra funds if within
             # one percent of expected sell trade value
+  
             buy_total_value_adjusted = float(buy_total_value) * 1.01
-            # if value of wallet is below expected value with an extra one percent added - use it
+            logger.debug('Buying - %s wallet is greater than expected, checking to see if 1 percent adjustment %s is greater than %s %s' % (trading_status['fiat'], buy_total_value_adjusted, wallet_total, trading_status['fiat']))
+            # if value of wallet is below expected value with an extra one percent added (buy_total_value_adjusted) - use wallet
             if float(wallet_total) < buy_total_value_adjusted:
                 validated_units = float(wallet_total) / float(current_stats_dict['buy_coin_price'])
+                logger.debug('Buying - %s wallet is less than 1 percent greater, adjusting purchase units to %s' % (trading_status['fiat'], validated_units))
             else:
                 validated_units = current_stats_dict['buy_coin_units']
+                logger.debug('Buying - %s wallet is more than 1 percent greater, leaving purchase units as %s' % (trading_status['fiat'], validated_units))
     # return
     return round(validated_units, 8)
 
@@ -1074,12 +1077,12 @@ def main():
             if args.debug:
                 print_trade_status(trading_status)
 
-            # check open orders
-            # if it errors restart loop
-            open_orders_dict = get_open_orders(polo)
-            if open_orders_dict['error']:
-                logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
-                continue
+            # # check open orders
+            # # if it errors restart loop
+            # open_orders_dict = get_open_orders(polo)
+            # if open_orders_dict['error']:
+            #     logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
+            #     continue
 
             if trading_status['type'] == "sell":
                 # send email update
@@ -1094,13 +1097,22 @@ def main():
                 # debug to exit before trading        
                 #sys.exit(1)
                 
+                # if sell order is placed check for orders
                 order_to_review = None
-                # if found sell orders
-                if open_orders_dict['order_sell_count'] > 0:
-                    # and orders match last order number
-                    for order in open_orders_dict['order_list']:
-                        if trading_status['sell_order_number'] in (order['order_number'],):
-                            order_to_review = order
+                if trading_status['sell_order_placed']:
+                    # check open orders
+                    # if it errors restart loop
+                    open_orders_dict = get_open_orders(polo)
+                    if open_orders_dict['error']:
+                        logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
+                        continue
+    
+                    # if found sell orders
+                    if open_orders_dict['order_sell_count'] > 0:
+                        # and orders match last order number
+                        for order in open_orders_dict['order_list']:
+                            if trading_status['sell_order_number'] in (order['order_number'],):
+                                order_to_review = order
                             
                 # if a current unfilled order is found
                 if order_to_review is not None:
@@ -1115,24 +1127,31 @@ def main():
                     #    # trading_status['sell_counter'] = 0
                 # else - there are no unfilled orders
                 else:
-                    # check if status is in order placed status and because no orders have been found
+                    # if sell order is placed and no orders found
                     # it means selling is complete - change to buying
                     if trading_status['sell_order_placed']:
                         trading_status['type'] = "buy"
-                        logger.debug('Selling - COMPLETE changing trading status to %s' % (trading_status['type']))
+                        logger.debug('Selling - COMPLETE - Trading Status changed to %s' % (trading_status['type']))
                     else:
+                        # sell order is not placed so get balances and proceed
                         sell_units = get_coin_balance(polo, current_stats_dict['sell_coin_short'])
                         # if there were errors
                         if sell_units['error']:
                             logger.error('Error retrieving balances, can not buy or sell')
                             logger.error('%s' % sell_units['error'])
                         else:
-                            # if their no coins to sell
-                            if float(sell_units['result']) < 1:
-                                logger.error('Selling - Sell coin returned no units to sell, skipping sell')
-                                trading_status['trading'] = False
-                            else:
-                                trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status)
+                            trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status)
+                            #
+                            # these lines below will not work with expensive cryptos, sums being moved around all could be below 1 so I 
+                            # suspect the code is not suitable
+                            #
+                            # # if sell coin has no balance
+                            # if float(sell_units['result']) < 1:
+                            #     logger.error('Selling - Sell coin returned no units to sell, skipping sell')
+                            #     trading_status['trading'] = False
+                            # else:
+                            #     # start selling
+                            #     trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status)
 
 
             if trading_status['type'] == "buy":
@@ -1145,14 +1164,23 @@ def main():
                         if email_status['error']:
                             logger.error(email_status['msg'])
             
-            
+
+                # if buy order is placed check for orders
                 order_to_review = None
-                # if found buy orders
-                if open_orders_dict['order_buy_count'] >0:
-                    # and orders match last order number
-                    for order in open_orders_dict['order_list']:
-                        if trading_status['buy_order_number'] in (order['order_number'],):
-                            order_to_review = order
+                if trading_status['buy_order_placed']:
+                    # check open orders
+                    # if it errors restart loop
+                    open_orders_dict = get_open_orders(polo)
+                    if open_orders_dict['error']:
+                        logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
+                        continue
+                    
+                    # if found buy orders
+                    if open_orders_dict['order_buy_count'] >0:
+                        # and orders match last order number
+                        for order in open_orders_dict['order_list']:
+                            if trading_status['buy_order_number'] in (order['order_number'],):
+                                order_to_review = order
 
                 # if a current unfilled order is found
                 if order_to_review is not None:
@@ -1168,7 +1196,7 @@ def main():
                     #    trading_status['buy_counter'] = 0
                 # else - there are no unfilled orders
                 else:
-                    # check if status is in order placed status and because no orders have been found
+                    # if buy order is placed and no orders found
                     # it means buy is complete
                     if trading_status['buy_order_placed']:
                         trading_status['trading_complete'] = True
@@ -1178,20 +1206,28 @@ def main():
                         trading_status['eval_counter'] = 0
                         logger.debug('Buying - COMPLETE - Trading Status changed to %s' % (trading_status['type']))
                     else:
+                        # buy order is not placed so get fiat balance and proceed
                         buy_units = get_coin_balance(polo, trading_status['fiat'])
+                        # if there were errors
                         if buy_units['error']:
                             logger.error('Buying - Error retrieving balances, can not buy or sell')
                             logger.error('Buying - %s' % buy_units['error'])
                         else:
-                            # if buy units balance is less than 1.0
-                            if float(buy_units['result']) < 1:
-                                 logger.error('Buying - Not enough %s to buy coins, skipping buy' % trading_status['fiat'])
-                                 trading_status['trading'] = False
-                                 # I need to figure out if order was cancelled
-                                 # get balance and compare selling units
-                                 # if same or similar i would suggest the buy was cancelled
-                            else:
-                                trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status)
+                            trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status)
+                            #
+                            # these lines below will not work with expensive cryptos, sums being moved around all could be below 1 so I 
+                            # suspect the code is not suitable
+                            #
+                            # # if fiat has no balance
+                            # if float(buy_units['result']) < 1:
+                            #      logger.error('Buying - Not enough %s to buy coins, skipping buy' % trading_status['fiat'])
+                            #      trading_status['trading'] = False
+                            #      # I need to figure out if order was cancelled
+                            #      # get balance and compare selling units
+                            #      # if same or similar i would suggest the buy was cancelled
+                            # else:
+                            #     trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status)
+
 
             '''
             When testing is enabled generate bogus  trade details

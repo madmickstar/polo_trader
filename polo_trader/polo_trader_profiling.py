@@ -185,21 +185,7 @@ class ProfilePairs:
         # calculate even buy coin units
         self.even_buy_coin_units = self.cur_sale_usdt / self.even_buy_coin_price
 
-        #self.purchase_stats_dict = {
-        #    'name': 'purchase',
-        #    'date': self.formated_date,
-        #    #'ratio': format(self.pur_factor, '.4f'),
-        #    'ratio': round(self.pur_factor, 4),
-        #    'buy_coin_price': round(self.pur_buy_coin_price, 8),
-        #    'buy_coin_units': round(self.pur_buy_coin_units, 8),
-        #    #'buy_coin_price': self.pur_buy_coin_price,
-        #    #'buy_coin_units': self.pur_buy_coin_units,
-        #    'buy_coin_short': self.buy_coin_short,
-        #    'buy_coin_long': self.buy_coin_long,
-        #    #'sell_coin_price': round(self.pur_sell_coin_price, 4),
-        #    'sell_coin_price': self.pur_sell_coin_price,
-        #    'sell_coin_short': self.sell_coin_short,
-        #}
+
         self.current_stats_dict = {
             'name': 'current',
             'date': self.formated_date,
@@ -224,7 +210,6 @@ class ProfilePairs:
             'sell_coin_price': self.cur_sell_coin_price,
             'sell_coin_short': self.sell_coin_short,
         }
-        #return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict
         return self.current_stats_dict, self.even_stats_dict
 
 
@@ -280,7 +265,7 @@ class JsonProfiles:
     Takes trading pair and checks if exists in JSON file
     if not in JSON, it grabs current order book prices and updates
     JSON with ratio, current price, long and short names and
-    generic qauntity values
+    generic qantity values
     '''
     def __init__(self, json_file, pair_list, polo=False, worst_trade_fee=0.005):
 

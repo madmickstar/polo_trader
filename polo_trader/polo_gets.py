@@ -142,9 +142,13 @@ def get_open_orders(polo):
     #logger = logging.getLogger(__name__)
     try:
         open_orders = polo.returnOpenOrders()
-        #logger.debug("I have %s open orders for USDT_XRP!" % open_orders['USDT_XRP'])
-        #logger.debug("I have %s open orders for USDT_STR!" % open_orders['USDT_STR'])
-        #I have [{u'orderNumber': u'48338784953', u'margin': 0, u'amount': u'566.10099057', u'rate': u'0.46896141', u'date': u'2018-01-11 03:57:54', u'total': u'265.47951874', u'type': u'buy', u'startingAmount': u'566.10099057'}] open orders for USDT_STR!
+        
+        # sample return
+        # {u'USDT_REP': [],
+        # u'USDT_NXT': [{u'orderNumber': u'79088415541', u'margin': 0, u'amount': u'10.00000000', u'rate': u'0.90000000', u'date': u'2018-07-02 11:30:58', u'total': u'9.00000000', u'type': u'sell', u'startingAmount': u'10.00000000'}],
+        # u'BTC_NEOS': [], u'BTC_OMG': [], etc.....
+        # u'USDT_XRP': [{u'orderNumber': u'110198753065', u'margin': 0, u'amount': u'10.00000000', u'rate': u'5.00000000', u'date': u'2018-07-02 11:30:30', u'total': u'50.00000000', u'type': u'sell', u'startingAmount': u'10.00000000'}],
+        # u'BTC_GAME': [], u'BTC_PPC': [], u'BTC_POT': [], u'USDT_STR': []}
 
     except Exception as err:
         #logger.error('get_open_orders - Could not get open orders - %s' % err)
@@ -154,8 +158,6 @@ def get_open_orders(polo):
         }
         return result_dict
 
-    #orders_list = []
-    #coin_list = ['USDT_XRP', 'USDT_STR']
     orders_found = False
     order_list = []
     order_sell_count = 0
@@ -183,31 +185,6 @@ def get_open_orders(polo):
                     order_sell_count += 1
                 if coin_dict['type'] == "buy":
                     order_buy_count += 1
-
-
-    #
-    #for coin in (coin_list):
-    #    if len(open_orders[coin]) > 0:
-    #        orders_found = True
-    #        for x in range(len(open_orders[coin])):
-    #            date_dict = date_conversions(open_orders[coin][x]['date'])
-    #            coin_dict = {
-    #               'coin_name': coin,
-    #               'type': open_orders[coin][x]['type'],
-    #               'order_number': open_orders[coin][x]['orderNumber'],
-    #               'amount': open_orders[coin][x]['amount'],
-    #               'rate': open_orders[coin][x]['rate'],
-    #               'total': open_orders[coin][x]['total'],
-    #               'local_timestamp': date_dict['local_time_stamp'],
-    #               'local_epoch': date_dict['local_epoch'],
-    #            }
-    #            order_list.append(coin_dict)
-    #            if coin_dict['type'] == "sell":
-    #                order_sell_count += 1
-    #            if coin_dict['type'] == "buy":
-    #                order_buy_count += 1
-    #
-    #print order_list
 
     result_dict = {
         #'result': open_orders,
