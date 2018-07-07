@@ -51,8 +51,8 @@ def process_cli():
         help='Buy coin, default = str')
     parser.add_argument('-f', '--fiat',
         default='usdt',
-        choices=['usdt', 'eth', 'btc'],
-        metavar=('{usdt, eth, btc}'),
+        choices=['usdt', 'btc'],
+        metavar=('{usdt, btc}'),
         help='Fiat coin, default = usdt')
     parser.add_argument('-mf', '--max-fee',
         default='0.0025',
@@ -96,22 +96,30 @@ def configure_logging(args):
         logging: logging configuration
     """
     if args.debug:
-        logging.basicConfig(stream=sys.stdout,
-                            #level=logging.INFO,
-                            level=logging.DEBUG,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            format='%(message)s')
-                            #format='[%(asctime)s] [%(levelname)-5s] [%(name)s] %(message)s')
+        if args.timestamp:    
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.DEBUG,
+                                datefmt='%Y-%m-%d %H:%M:%S',
+                                format='[%(asctime)s] %(message)s')
+        else:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.DEBUG,
+                                format='%(message)s')
+                                #format='[%(asctime)s] [%(levelname)-5s] [%(name)s] %(message)s')
         print_args(args)
-    elif args.timestamp:
-        logging.basicConfig(stream=sys.stdout,
-                            level=logging.INFO,
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            format='[%(asctime)s] %(message)s')
+
     else:
-        logging.basicConfig(stream=sys.stdout,
-                            level=logging.INFO,
-                            format='%(message)s')
+        if args.timestamp:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.INFO,
+                                datefmt='%Y-%m-%d %H:%M:%S',
+                                format='[%(asctime)s] %(message)s')
+        else:
+            logging.basicConfig(stream=sys.stdout,
+                                level=logging.INFO,
+                                format='%(message)s')
+                                
+    # whitelist moduels that are aloud to log to screen  
     for handler in logging.root.handlers:
         handler.addFilter(Whitelist('order_book_tabledraw', 'polo_tools', 'polo_gets', '__main__'))
     return logging

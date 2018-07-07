@@ -23,7 +23,6 @@ Polo Trader Features
 -  Requires private API to make trades
 -  Trades between
 -  USDT pairs - USDT\_XRP, USDT\_STR, USDT\_NXT, USDT\_ETH, USDT\_BTC
--  ETH pairs - ETH\_XRP, ETH\_STR, ETH\_NXT, ETH\_BTC
 -  BTC pairs - BTC\_XRP, BTC\_STR, BTC\_NXT, BTC\_ETH
 -  Tracks most recent trade in a local JSON file
 -  Includes a monitoring only script called Order Book
@@ -35,7 +34,7 @@ How It Works
 -  Script grabs from local JSON file the following items from last trade
 -  Amount of units purchased which become sell units in next trade
 -  The From and To crypto pairs (symbols)
--  The crypto fiat the trade will go via, USDT, BTC or ETH
+-  The crypto fiat the trade will go via, USDT or BTC
 -  Last trade buy/sell prices
 -  Last trade ratio
 -  If last trade does not exist, script grabs current prices from
@@ -89,7 +88,7 @@ Usage Polo Trader
 
 ::
 
-    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -tt {0.0,..,20.0} | -or {0.0000} | -mf {0.0025, 0.0015} | -e | -l | -t | -d | -h | --version ] 
+    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, btc} | -tt {0.0,..,20.0} | -or {0.0000} | -mf {0.0025, 0.0015} | -e | -l | -t | -d | -h | --version ] 
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |
@@ -102,8 +101,24 @@ Usage Polo Trader
 | [crypto]  |         | {str,xrp,nxt,eth,bt |                   |                    |
 |           |         | c}                  |                   |                    |
 +-----------+---------+---------------------+-------------------+--------------------+
-| -f        | string  | -f {usdt,eth,btc}   | usdt              | Fiat crypto        |
+| -f        | string  | -f {usdt,btc}       | usdt              | Fiat crypto        |
 | [crypto]  |         |                     |                   |                    |
++-----------+---------+---------------------+-------------------+--------------------+
+| -r        | float   | -r {0.0000}         | 0.0               | Trading ratio over |
+| [ratio]   |         |                     |                   | ride, handy if you |
+|           |         |                     |                   | want to trade      |
+|           |         |                     |                   | below break even   |
+|           |         |                     |                   | point or between   |
+|           |         |                     |                   | threshold          |
+|           |         |                     |                   | percentages        |
++-----------+---------+---------------------+-------------------+--------------------+
+| -u        | float   | -u {0.0000}         | 0.0               | Sell units over    |
+| [units]   |         |                     |                   | ride, set units    |
+|           |         |                     |                   | you want to sell,  |
+|           |         |                     |                   | over rides units   |
+|           |         |                     |                   | retrieved from     |
+|           |         |                     |                   | previous trde      |
+|           |         |                     |                   | stored in JSON     |
 +-----------+---------+---------------------+-------------------+--------------------+
 | -tt       | float   | -tt                 | 10.0              | Trading threshold  |
 | [percent] |         | {0.0,0.5,1.0,..,19. |                   | percentage, added  |
@@ -111,14 +126,19 @@ Usage Polo Trader
 |           |         |                     |                   | to produce trading |
 |           |         |                     |                   | threshold          |
 +-----------+---------+---------------------+-------------------+--------------------+
-| -or       | float   | -or {0.0000}        | 0.0               | Ratio to over ride |
-| [ratio]   |         |                     |                   | trading threshold, |
-|           |         |                     |                   | handy if you want  |
-|           |         |                     |                   | to trade below     |
-|           |         |                     |                   | break even point   |
-+-----------+---------+---------------------+-------------------+--------------------+
 | -mf [fee] | float   | -mf {0.0025,0.0015} | 0.0025            | Maximum fee for    |
 |           |         |                     |                   | trading            |
++-----------+---------+---------------------+-------------------+--------------------+
+| -ss       | int     | -ss {1..10}         | 3                 | Amount of          |
+| [poles]   |         |                     |                   | consecutive times  |
+|           |         |                     |                   | ratio needs to be  |
+|           |         |                     |                   | evaluated above    |
+|           |         |                     |                   | threshold before   |
+|           |         |                     |                   | triggering trading |
++-----------+---------+---------------------+-------------------+--------------------+
+| -ph       | int     | -ph {10..50}        | 20                | Print headers to   |
+| [lines]   |         |                     |                   | screen every x     |
+|           |         |                     |                   | amount of lines    |
 +-----------+---------+---------------------+-------------------+--------------------+
 | -e        | switch  | -e                  | disabled          | Email when trading |
 +-----------+---------+---------------------+-------------------+--------------------+
@@ -140,7 +160,7 @@ Usage Order Book
 
 ::
 
-    order_book [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, eth, btc} | -mf {0.0025, 0.0015} | -l | -t | -d | -h | --version ]
+    order_book [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, btc} | -mf {0.0025, 0.0015} | -l | -t | -d | -h | --version ]
 
 +---------------+----------+----------------------------+------------+-----------------------------------+
 | Argument      | Type     | Format                     | Default    | Description                       |
@@ -149,7 +169,7 @@ Usage Order Book
 +---------------+----------+----------------------------+------------+-----------------------------------+
 | -b [crypto]   | string   | -b {str,xrp,nxt,eth,btc}   | str        | Buying crypto                     |
 +---------------+----------+----------------------------+------------+-----------------------------------+
-| -f [crypto]   | string   | -f {usdt,eth,btc}          | usdt       | Fiat crypto                       |
+| -f [crypto]   | string   | -f {usdt,btc}              | usdt       | Fiat crypto                       |
 +---------------+----------+----------------------------+------------+-----------------------------------+
 | -mf [fee]     | float    | -mf {0.0025,0.0015}        | 0.0025     | Maximum fee for trading           |
 +---------------+----------+----------------------------+------------+-----------------------------------+

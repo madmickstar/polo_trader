@@ -58,8 +58,8 @@ def process_cli(max_trading_threshold):
         help='Buy coin, default = str')
     parser.add_argument('-f', '--fiat',
         default='usdt',
-        choices=['usdt', 'eth', 'btc'],
-        metavar=('{usdt, eth, btc}'),
+        choices=['usdt', 'btc'],
+        metavar=('{usdt, btc}'),
         help='Fiat coin, default = usdt')
     parser.add_argument('-tt', '--trade_threshold',
         default='10.0',
@@ -285,7 +285,7 @@ def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_overri
         #factor = "Factor    Downward".center(25)
         direction = "Down"
     if ratio_override:
-        factor = '{:^10}{:^10}{:^6.4f}'.format("Ratio " + direction, "override", ratio_override)
+        factor = '{:^14}{:^5}{:^7.4f}'.format("Ratio " + direction, "O/R", ratio_override)
     else:
         factor = '{:^26}'.format("Ratio " + direction)
     #units = ("%s    Threshold = %s%s" % ("Units", target_dict['name'],"%")).center(31)
@@ -302,7 +302,7 @@ def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_overri
 
     
 
-def print_some_results(ratio_increasing, current_stats_dict, even_stats_dict, target_dict):
+def print_some_results(current_stats_dict, even_stats_dict, target_dict):
     '''
     print results to screen for review
     '''
@@ -1014,7 +1014,7 @@ def main():
                 print_header(ratio_increasing, current_stats_dict, target_dict, ratio_override)
                 print_headers_counter = 0
             ''' print results '''
-            print_some_results(ratio_increasing, current_stats_dict, even_stats_dict, target_dict)
+            print_some_results(current_stats_dict, even_stats_dict, target_dict)
         except IOError:
             ''' if user pauses screen or scrolls up catch and continue '''
             pass
@@ -1097,6 +1097,9 @@ def main():
                 # debug to exit before trading        
                 #sys.exit(1)
                 
+                # increment selling loop counter
+                trading_status['sell_counter'] += 1
+                    
                 # if sell order is placed check for orders
                 order_to_review = None
                 if trading_status['sell_order_placed']:
@@ -1116,7 +1119,7 @@ def main():
                             
                 # if a current unfilled order is found
                 if order_to_review is not None:
-                    trading_status['sell_counter'] += 1
+                    logger.debug('Selling - %s Found sell order matching order number %s' % (trading_status['sell_counter'], order_to_review['order_number']))
                     ## if loop threshold has been hit, take action
                     #if trading_status['sell_counter'] > 2:
                     #    logger.debug('Selling - Waiting for sell order to complete %s order needs to be sold using values or cancelled' % trading_status['sell_counter'])
@@ -1164,7 +1167,9 @@ def main():
                         if email_status['error']:
                             logger.error(email_status['msg'])
             
-
+                # increment selling loop counter
+                trading_status['buy_counter'] += 1
+                
                 # if buy order is placed check for orders
                 order_to_review = None
                 if trading_status['buy_order_placed']:
@@ -1184,8 +1189,7 @@ def main():
 
                 # if a current unfilled order is found
                 if order_to_review is not None:
-                    trading_status['buy_counter'] += 1
-                    logger.debug('Buying - %s Found buy order matching order number %s' % (trading_status['buy_counter'], order['order_number']))
+                    logger.debug('Buying - %s Found buy order matching order number %s' % (trading_status['buy_counter'], order_to_review['order_number']))
                     ## if loop threshold has been hit, take action
                     #if trading_status['buy_counter'] > 2:
                     #    logger.debug('Buying - order needs to be moved or cancelled')

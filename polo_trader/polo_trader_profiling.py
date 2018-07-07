@@ -216,7 +216,7 @@ class ProfilePairs:
     def _generate_targets(self, max_trading_threshold, worst_trade_fee, selling_units, current_stats_dict, even_stats_dict):
 
         self.max_trading_threshold = max_trading_threshold
-        self.trade_fee = worst_trade_fee / 2
+        self.trade_fee = worst_trade_fee
         self.selling_units = selling_units
         self.curr = current_stats_dict
         self.even = even_stats_dict
@@ -234,6 +234,7 @@ class ProfilePairs:
         self.sell_total = self.curr['sell_coin_price'] * (self.selling_units - (self.selling_units * self.trade_fee))
         while (self.count < self.max_trading_threshold):
             self.count = self.count + 0.5
+            # * 0.01 converts count from percentage into decimal
             self.factor_adjustment = self.even['ratio'] * self.count * 0.01
             if self.ratio_increasing:
                 self.target_factor = self.even['ratio'] + self.factor_adjustment
@@ -243,9 +244,12 @@ class ProfilePairs:
                 self.target_buy_coin_price = self.curr['sell_coin_price'] * self.target_factor
 
             self.target_buy_coin_units = self.sell_total / self.target_buy_coin_price
+            
             self.current_target_dict = {
                 'name': self.count,
                 'date': current_stats_dict['date'],
+                'ratio_adjust': self.factor_adjustment,
+                'sell_total': self.sell_total,
                 'ratio': round(self.target_factor, 8),
                 'buy_coin_price': round(self.target_buy_coin_price, 8),
                 'buy_coin_units': round(self.target_buy_coin_units, 8),
@@ -254,7 +258,10 @@ class ProfilePairs:
                 'sell_coin_short': current_stats_dict['sell_coin_short'],
             }
             self.lod_targets.append(self.current_target_dict)
-
+        
+        ## debugging maths
+        #for x in self.lod_targets:
+        #    print x
         return self.lod_targets
 
 
