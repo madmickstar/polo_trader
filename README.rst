@@ -88,7 +88,7 @@ Usage Polo Trader
 
 ::
 
-    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, btc} | -tt {0.0,..,20.0} | -or {0.0000} | -mf {0.0025, 0.0015} | -e | -l | -t | -d | -h | --version ] 
+    polo_trader [ -s {xrp, str, nxt, eth, btc} | -b {str, xrp, nxt, eth, btc} | -f {usdt, btc} | -r {0.0000} | -u {0.0000} | -tt {0.0,..,20.0} | -mf {0.0025, 0.0015} | -ss {1..10} | -ph {10..50} | -e | -l | -t | -d | -h | --version ] 
 
 +-----------+---------+---------------------+-------------------+--------------------+
 | Argument  | Type    | Format              | Default           | Description        |

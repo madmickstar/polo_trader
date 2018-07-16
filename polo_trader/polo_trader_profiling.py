@@ -40,14 +40,12 @@ class ProfilePairs:
     def get_even_and_targets(self, max_trading_threshold, selling_units):
         self.max_trading_threshold = max_trading_threshold
         try:
-            #self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict = self._generate_price()
             self.current_stats_dict, self.even_stats_dict = self._generate_price()
         except:
             raise
-        #self.ratio_increasing = self._is_ratio_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
         self.lod_targets = self._generate_targets(self.max_trading_threshold, self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict)
-        #return self.purchase_stats_dict, self.current_stats_dict, self.even_stats_dict, self.lod_targets
         return self.current_stats_dict, self.even_stats_dict, self.lod_targets
+        
 
     def get_stats(self):
         '''
@@ -59,6 +57,7 @@ class ProfilePairs:
         except:
             raise
 
+            
     def get_ratio_direction(self, cur_sell_coin_price, cur_buy_coin_price):
         '''
         checks if ratio is increasing and returns true or false
@@ -72,8 +71,27 @@ class ProfilePairs:
         self.even_stats_dict = even_stats_dict
         self.lod_targets = self._generate_targets(self.max_trading_threshold, self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict)
         return self.lod_targets
+        
 
+    def get_trade_threshold(self, selling_units, current_stats_dict, even_stats_dict, trade_threshold):
+        self.selling_units = selling_units
+        self.current_stats_dict = current_stats_dict
+        self.even_stats_dict = even_stats_dict
+        self.trade_threshold = trade_threshold
+        self.lod_targets = self._generate_target(self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict, self.trade_threshold)
+        return self.lod_targets
+        
 
+    def get_buy_units_threshold(self, selling_units, current_stats_dict, even_stats_dict, buy_units_ratio, buy_units_override):
+        self.selling_units = selling_units
+        self.current_stats_dict = current_stats_dict
+        self.even_stats_dict = even_stats_dict
+        self.buy_units_ratio = buy_units_ratio
+        self.buy_units_override = buy_units_override
+        self.lod_targets = self._find_target(self.worst_trade_fee, self.selling_units, self.current_stats_dict, self.even_stats_dict, self.buy_units_ratio, self.buy_units_override)
+        return self.lod_targets
+        
+        
     def _is_ratio_increasing(self, cur_sell_coin_price, cur_buy_coin_price):
         self.sell_price = cur_sell_coin_price
         self.buy_price = cur_buy_coin_price
@@ -82,7 +100,6 @@ class ProfilePairs:
         else:
             self.ratio_increasing = False
         return self.ratio_increasing
-
 
 
     def _get_orderbook(self, polo, pair, order_type='bid'):
@@ -102,6 +119,7 @@ class ProfilePairs:
                 'error': err,
             }
             return self.result_dict
+            
         self.current_orders = []
         # first check the list returned is not empty
         if len(self.results) > 0:
@@ -141,6 +159,7 @@ class ProfilePairs:
             'sell_coin_long': self.sell_coin_long,
             'formated_date': time.strftime("%Y%m%d-%H%M%S"),
             }
+            
         self.order_units_bid = 0
         self.order_units_ask = 0
         for x in self.bid_order['result']:
@@ -212,6 +231,90 @@ class ProfilePairs:
         }
         return self.current_stats_dict, self.even_stats_dict
 
+        
+    def _find_target(self, worst_trade_fee, selling_units, current_stats_dict, even_stats_dict, buy_units_ratio, buy_units_override):
+
+        #self.max_trading_threshold = max_trading_threshold
+        self.trade_fee = worst_trade_fee
+        self.selling_units = selling_units
+        self.curr = current_stats_dict
+        self.even = even_stats_dict
+        self.buy_units_ratio = buy_units_ratio
+        self.buy_units_override = buy_units_override
+        self.lod_targets = []
+        self.ratio_increasing = self._is_ratio_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
+
+        # first add even target to list
+        self.even_target =  self.even
+        #self.even_target['name'] = 0.0
+        #self.lod_targets.append(self.even_target)
+
+        if self.ratio_increasing:
+            #(ratio-even)/even
+            self.buy_units_percent = (self.buy_units_ratio - self.even['ratio']) / self.even['ratio']
+            ### debug
+            #print('%s = (%s - %s) / %s' % (self.buy_units_percent, self.buy_units_ratio, self.even['ratio'], self.even['ratio']))
+        else:
+            # (even-ratio)/even
+            self.buy_units_percent = (self.even['ratio'] - self.buy_units_ratio) / self.even['ratio']
+            ### debug
+            #print('%s = (%s - %s) / %s' % (self.buy_units_percent, self.even['ratio'], self.buy_units_ratio, self.even['ratio']))
+        
+        # then loop in the rest of the targets
+        #self.buy_units_percent = 0.0
+        self.target_buy_coin_units = 0.0
+        # estimate total from sell - based on units to sell (less the fee) and current selling price
+        self.sell_total = self.curr['sell_coin_price'] * (self.selling_units - (self.selling_units * self.trade_fee))
+        ### debug
+        #print('%s = %s * (%s - (%s * %s))' % (self.sell_total, self.curr['sell_coin_price'], self.selling_units, self.selling_units, self.trade_fee))
+        while (self.target_buy_coin_units < self.buy_units_override):
+            ### debug
+            #print('%s = %s + 0.01' % (self.buy_units_percent, self.buy_units_percent))
+            self.buy_units_percent = self.buy_units_percent + 0.001
+            self.name = self.buy_units_percent * 100
+            # * 0.01 converts count from percentage into decimal
+            self.factor_adjustment = self.even['ratio'] * self.buy_units_percent
+            #self.factor_adjustment = self.even['ratio'] * self.buy_units_percent * 0.01
+            ### debug
+            #print('%s = %s + 0.01' % (self.buy_units_percent, self.buy_units_percent))
+            #print('%s = %s * %s * 0.01' % (self.factor_adjustment, self.even['ratio'], self.buy_units_percent))
+            
+            if self.ratio_increasing:
+                self.target_factor = self.even['ratio'] + self.factor_adjustment
+                self.target_buy_coin_price = self.curr['sell_coin_price'] / self.target_factor
+            else:
+                self.target_factor = self.even['ratio'] - self.factor_adjustment
+                self.target_buy_coin_price = self.curr['sell_coin_price'] * self.target_factor
+                ### debug
+                #print('%s = %s - %s' % (self.target_factor, self.even['ratio'], self.factor_adjustment))
+                #print('%s = %s * %s' % (self.target_buy_coin_price, self.curr['sell_coin_price'], self.target_factor))
+
+                
+            self.target_buy_coin_units = self.sell_total / self.target_buy_coin_price
+            
+            
+            ### debug
+            #print('%s = %s / %s' % (self.target_buy_coin_units, self.sell_total, self.target_buy_coin_price))
+            
+            self.current_target_dict = {
+                'name': round(self.name, 2),
+                'date': current_stats_dict['date'],
+                'ratio_adjust': round(self.factor_adjustment, 8),
+                'sell_total': round(self.sell_total, 2),
+                'ratio': round(self.target_factor, 4),
+                'buy_coin_price': round(self.target_buy_coin_price, 8),
+                'buy_coin_units': round(self.target_buy_coin_units, 8),
+                'buy_coin_short': current_stats_dict['buy_coin_short'],
+                'sell_coin_price': current_stats_dict['sell_coin_price'],
+                'sell_coin_short': current_stats_dict['sell_coin_short'],
+            }
+            self.lod_targets.append(self.current_target_dict)
+        print self.current_target_dict
+        ## debugging maths
+        for x in self.lod_targets:
+            print x
+        return self.current_target_dict
+
 
     def _generate_targets(self, max_trading_threshold, worst_trade_fee, selling_units, current_stats_dict, even_stats_dict):
 
@@ -265,7 +368,62 @@ class ProfilePairs:
         return self.lod_targets
 
 
+    def _generate_target(self, worst_trade_fee, selling_units, current_stats_dict, even_stats_dict, trade_threshold):
+        self.trade_fee = worst_trade_fee
+        self.selling_units = selling_units
+        self.curr = current_stats_dict
+        self.even = even_stats_dict
+        self.trade_threshold = trade_threshold
+        self.lod_targets = []
+        self.ratio_increasing = self._is_ratio_increasing(self.current_stats_dict['sell_coin_price'], self.current_stats_dict['buy_coin_price'])
 
+        # first add even target to list
+        self.even_target =  self.even
+        self.even_target['name'] = 0.0
+        #self.lod_targets.append(self.even_target)
+        
+        if self.trade_threshold == 0.0:
+           self.target_dict = {
+               'name': 0.0,
+               'buy_coin_price': self.even_target['buy_coin_price'],
+               'ratio': self.even_target['ratio'],
+               'buy_coin_units': self.even_target['buy_coin_units'],
+           }
+        else:
+            # estimate total from sell - based on units to sell (less the fee) and current selling price
+            self.sell_total = self.curr['sell_coin_price'] * (self.selling_units - (self.selling_units * self.trade_fee))
+
+            #self.count = self.trade_threshold
+            # * 0.01 converts count from percentage into decimal
+            self.factor_adjustment = self.even['ratio'] * self.trade_threshold * 0.01
+            if self.ratio_increasing:
+                self.target_factor = self.even['ratio'] + self.factor_adjustment
+                self.target_buy_coin_price = self.curr['sell_coin_price'] / self.target_factor
+            else:
+                self.target_factor = self.even['ratio'] - self.factor_adjustment
+                self.target_buy_coin_price = self.curr['sell_coin_price'] * self.target_factor
+
+            self.target_buy_coin_units = self.sell_total / self.target_buy_coin_price
+            
+
+            self.name = self.trade_threshold
+            self.target_dict = {
+                'name': self.trade_threshold,
+                'ratio': round(self.target_factor, 8),
+                'buy_coin_price': round(self.target_buy_coin_price, 8),
+                'buy_coin_units': round(self.target_buy_coin_units, 8),
+            }
+            
+        #self.lod_targets.append(self.target_dict)
+        
+        ## debugging maths
+        #for x in self.lod_targets:
+        #    print x
+        return self.target_dict
+        #return self.lod_targets
+
+
+        
 
 class JsonProfiles:
     '''

@@ -45,7 +45,7 @@ def process_cli(max_trading_threshold):
         python polo_trade.py -s xrp -b nxt -tt 5 \n \
         ''',
     formatter_class=RawTextHelpFormatter)
-    #g1 = parser.add_mutually_exclusive_group()
+    g1 = parser.add_mutually_exclusive_group()
     parser.add_argument('-s', '--sell',
         default='xrp',
         choices=['xrp', 'str', 'nxt', 'eth', 'btc'],
@@ -67,16 +67,21 @@ def process_cli(max_trading_threshold):
         choices=map(lambda x: x/10.0, range(0, mtt, 5)),
         metavar=('{0.5, 1.0, .. 19.5, 20.0}'),
         help='Trade threshold percentage, default = 10.0')
-    parser.add_argument('-r', '--ratio_override',
-        default='0.0000',
+    g1.add_argument('-r', '--ratio_override',
+        default='0.0',
         type=float,
         metavar=('xx.xxxx'),
-        help='Ratio to override trade threshold, default = 0.0000 therefore disabled')
-    parser.add_argument('-u', '--units_override',
-        default='0.0000',
+        help='Override trade threshold using ratio, default = 0.0000 therefore disabled')
+    parser.add_argument('-su', '--sell_units_override',
+        default='0.0',
         type=float,
         metavar=('{xx.xxx}'),
-        help='Units to override last traded units, default = 0 therefore disabled')
+        help='Sell units to override last traded units, default = 0.0 therefore disabled')
+    g1.add_argument('-bu', '--buy_units_override',
+        default='0.0',
+        type=float,
+        metavar=('{xx.xxx}'),
+        help='Override trade threshold using buy units, default = 0.0 therefore disabled')
     parser.add_argument('-mf', '--max_fee',
         default='0.0025',
         type=float,
@@ -106,10 +111,16 @@ def process_cli(max_trading_threshold):
     parser.add_argument('-l', '--log',
         action="store_true",
         help='Enable logging to a file')
+    parser.add_argument('-m', '--monitoring_mode',
+        action="store_true",
+        help='Enable monitoring only mode. No trades will trigger when enabled')
     parser.add_argument('-t', '--timestamp',
         action="store_true",
         help='Enable timestamping all output to console')
     parser.add_argument('-d', '--debug',
+        action="store_true",
+        help='Enable debug output to console')
+    parser.add_argument('-dd', '--debug_https',
         action="store_true",
         help='Enable debug output to console')
     parser.add_argument('--version',
@@ -140,8 +151,8 @@ def configure_logging(args):
     Returns:
         logging: logging configuration
     """
-    if args.debug:
-        if args.timestamp:    
+    if args.debug or args.debug_https:
+        if args.timestamp:
             logging.basicConfig(stream=sys.stdout,
                                 level=logging.DEBUG,
                                 datefmt='%Y-%m-%d %H:%M:%S',
@@ -163,10 +174,11 @@ def configure_logging(args):
             logging.basicConfig(stream=sys.stdout,
                                 level=logging.INFO,
                                 format='%(message)s')
-                                
-    # whitelist moduels that are aloud to log to screen                            
-    for handler in logging.root.handlers:
-        handler.addFilter(Whitelist('__main__', 'polo_tools', 'polo_gets', 'polo_sell_buy'))
+
+    if not args.debug_https:
+        # whitelist modules that are aloud to log to screen
+        for handler in logging.root.handlers:
+            handler.addFilter(Whitelist('__main__', 'polo_tools', 'polo_gets', 'polo_sell_buy'))
     return logging
 
 
@@ -220,10 +232,10 @@ def print_balances(avail_balances_lod):
     print available balances
     '''
     logger = logging.getLogger(__name__)
-    
+
     #logger.debug('%s' % avail_balances_lod)
     #avail_balances_lod.append({'units': 0.999999999, 'name': u'USDT'})
-    
+
     w = [23, 24, 25, 31]
     if len(avail_balances_lod) > 0:
         header_divider = '|-------------------------+---------------------------+----------------------------+----------------------------------|'
@@ -266,41 +278,47 @@ def print_balances(avail_balances_lod):
             balances_header = balances_header + ' {} |'.format(filler)
             logger.info('%s' % balances_header)
 
-            
+
 
 def print_header(ratio_increasing, current_stats_dict, target_dict, ratio_override):
     logger = logging.getLogger(__name__)
     date_stamp = current_stats_dict['date']
-    #date_formatted = (date_stamp[0:4] + "-" + date_stamp[4:6] + "-" + date_stamp[6:8]).center(10)
-    #sell_coin = current_stats_dict['sell_coin_short'].center(7)
-    #buy_coin = current_stats_dict['buy_coin_short'].center(28)
-
     date_formatted = '{:^10}'.format(date_stamp[0:4] + "-" + date_stamp[4:6] + "-" + date_stamp[6:8])
-    sell_coin = '{:^23}'.format(current_stats_dict['sell_coin_long'])
-    buy_coin = '{:^25}'.format(current_stats_dict['buy_coin_long'])
+
+    ''' sell coin '''
+    ha1 = '{:^23}'.format(current_stats_dict['sell_coin_long'])
+    hb1 = '{:^23}'.format(current_stats_dict['sell_coin_units'])
+    hc1 = '{:^11} {:^11}'.format(date_formatted, "Current")
+
+    ''' buy coin '''
+    ha2 = '{:^25}'.format(current_stats_dict['buy_coin_long'])
+    hb2 = '{:^25}'.format("")
+    hc2 = '{:^12} {:^12}'.format("Current", "Target")
+
+    ''' ratio '''
     if ratio_increasing:
-        #factor = "Factor    Upward".center(25)
-        direction = "Up"
+        direction = "Upwards"
     else:
-        #factor = "Factor    Downward".center(25)
-        direction = "Down"
+        direction = "Downwards"
+    ha3 = '{:^26}'.format("Ratio " + direction)
     if ratio_override:
-        factor = '{:^14}{:^5}{:^7.4f}'.format("Ratio " + direction, "O/R", ratio_override)
+        hb3 = '{:>13}{:1}{:<12.4f}'.format("Override","", ratio_override)
     else:
-        factor = '{:^26}'.format("Ratio " + direction)
-    #units = ("%s    Threshold = %s%s" % ("Units", target_dict['name'],"%")).center(31)
-    units = '{:^14}{:4.1f}{}{:^13}'.format("Est. Units",target_dict['name'],"%","Threshold")
+        hb3 = '{:^26}'.format("")
+    hc3 = '{:^8} {:^8} {:^8}'.format("Current", "Even", "Target")
 
-    h1 = '{:^11} {:^11}'.format(date_formatted, "Current")
-    h2 = '{:^12} {:^12}'.format("Current", "Target")
-    h3 = '{:^8} {:^8} {:^8}'.format("Current", "Even", "Target")
-    h4 = '{:^10} {:^10} {:^10}'.format("Current", "Even", "Target")
+    ''' units '''
+    ha4 = '{:^32}'.format("Estimated Buy Units")
+    hb4 = '{:>20}{:1}{:>5.2f}{:1}{:<5}'.format("Trading Threshold","",target_dict['name'],"","%")
+    hc4 = '{:^10} {:^10} {:^10}'.format("Current", "Even", "Target")
+
     logger.info('|-------------------------+---------------------------+----------------------------+----------------------------------|')
-    logger.info('| %s | %s | %s | %s |' % (sell_coin, buy_coin, factor, units))
-    logger.info('| %s | %s | %s | %s |' % (h1, h2, h3, h4))
+    logger.info('| %s | %s | %s | %s |' % (ha1, ha2, ha3, ha4))
+    logger.info('| %s | %s | %s | %s |' % (hb1, hb2, hb3, hb4))
+    logger.info('| %s | %s | %s | %s |' % (hc1, hc2, hc3, hc4))
     logger.info('|-------------------------+---------------------------+----------------------------+----------------------------------|')
 
-    
+
 
 def print_some_results(current_stats_dict, even_stats_dict, target_dict):
     '''
@@ -363,7 +381,7 @@ def generate_test_trade_data(fsym):
         }
     return trading_status
 
-    
+
 # optimised function
 def calc_target(trade_threshold, lod_targets):
     '''
@@ -402,16 +420,16 @@ def eval_trading(ratio_increasing, current_ratio, target_ratio):
            return True
    return False
 
-   
-    
-def factor_increasing(cur_sell_coin_price, cur_buy_coin_price):
+
+
+def is_ratio_increasing(cur_sell_coin_price, cur_buy_coin_price):
     if cur_sell_coin_price > cur_buy_coin_price:
         return True
     else:
         return False
-    
-    
-    
+
+
+
 def check_factor_diff(factor_threshold, current_factor, even_factor):
      '''
      checks if the difference between current and break even factors is within the factor threshold
@@ -427,19 +445,19 @@ def check_factor_diff(factor_threshold, current_factor, even_factor):
 
 def bad_factor_detected(polo, current_stats_dict, factor_check):
     logger = logging.getLogger(__name__)
-    sell_units = get_coin_balance(polo, current_stats_dict['sell_coin_short'])
-    if not sell_units['error']:
+    sell_units_wallet = get_coin_balance(polo, current_stats_dict['sell_coin_short'])
+    if not sell_units_wallet['error']:
         logger.warning('')
-        logger.warning('Coin check - Selling coin %s wallet has %s' % (current_stats_dict['sell_coin_short'], sell_units['result']))
+        logger.warning('Coin check - Selling coin %s wallet has %s' % (current_stats_dict['sell_coin_short'], sell_units_wallet['result']))
     else:
         logger.error('')
-        logger.error('Coin check - %s' % sell_units['error'])
+        logger.error('Coin check - %s' % sell_units_wallet['error'])
 
-    buy_units = get_coin_balance(polo, current_stats_dict['buy_coin_short'])
-    if not buy_units['error']:
-        logger.warning('Coin check - Buy coin %s - wallet has %s' % (current_stats_dict['buy_coin_short'], buy_units['result']))
+    buy_units_wallet = get_coin_balance(polo, current_stats_dict['buy_coin_short'])
+    if not buy_units_wallet['error']:
+        logger.warning('Coin check - Buy coin %s - wallet has %s' % (current_stats_dict['buy_coin_short'], buy_units_wallet['result']))
     else:
-        logger.error('Coin check - %s' % buy_units['error'])
+        logger.error('Coin check - %s' % buy_units_wallet['error'])
     logger.error('Coin check - Current factor is unexpectly higher than even factor by %s - suspect selling coin is around the wrong way' % factor_check)
     logger.error('Coin check - Probably need to swap around buy and sell coins')
 
@@ -451,17 +469,17 @@ def generate_stats(current_stats_dict, even_stats_dict, units, trading_status):
     else:
         x = "Buying"
 
-    ##logger.debug('%s - %s' % (x, purchase_stats_dict))
-    logger.debug('%s - ================== CURRENT STATS ==========================' % x)
-    ##logger.debug('%s - %s' % (x, current_stats_dict))
-    logger.debug('%s - %s Name %s Factor %s' % (x, current_stats_dict['date'], current_stats_dict['name'], current_stats_dict['ratio']))
-    logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['sell_coin_short'], current_stats_dict['sell_coin_price'], current_stats_dict['sell_coin_units'], current_stats_dict['sell_coin_long']))
-    logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['buy_coin_short'], current_stats_dict['buy_coin_price'], current_stats_dict['buy_coin_units'], current_stats_dict['buy_coin_long']))
-    logger.debug('%s - ================== EVEN STATS =============================' % x)
-    logger.debug('%s - %s Name %s Factor %s' % (x, even_stats_dict['date'], even_stats_dict['name'], even_stats_dict['ratio']))
-    logger.debug('%s - %s Price %s' % (x, even_stats_dict['sell_coin_short'], even_stats_dict['sell_coin_price']))
-    logger.debug('%s - %s Price %s Units %s Pair %s' % (x, even_stats_dict['buy_coin_short'], even_stats_dict['buy_coin_price'], even_stats_dict['buy_coin_units'], even_stats_dict['buy_coin_long']))
-    logger.debug('%s - =========================================================' % x)
+    # ##logger.debug('%s - %s' % (x, purchase_stats_dict))
+    # logger.debug('%s - ================== CURRENT STATS ==========================' % x)
+    # ##logger.debug('%s - %s' % (x, current_stats_dict))
+    # logger.debug('%s - %s Name %s Factor %s' % (x, current_stats_dict['date'], current_stats_dict['name'], current_stats_dict['ratio']))
+    # logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['sell_coin_short'], current_stats_dict['sell_coin_price'], current_stats_dict['sell_coin_units'], current_stats_dict['sell_coin_long']))
+    # logger.debug('%s - %s Price %s Units %s Pair %s' % (x, current_stats_dict['buy_coin_short'], current_stats_dict['buy_coin_price'], current_stats_dict['buy_coin_units'], current_stats_dict['buy_coin_long']))
+    # logger.debug('%s - ================== EVEN STATS =============================' % x)
+    # logger.debug('%s - %s Name %s Factor %s' % (x, even_stats_dict['date'], even_stats_dict['name'], even_stats_dict['ratio']))
+    # logger.debug('%s - %s Price %s' % (x, even_stats_dict['sell_coin_short'], even_stats_dict['sell_coin_price']))
+    # logger.debug('%s - %s Price %s Units %s Pair %s' % (x, even_stats_dict['buy_coin_short'], even_stats_dict['buy_coin_price'], even_stats_dict['buy_coin_units'], even_stats_dict['buy_coin_long']))
+    logger.debug('%s - ============================================================' % x)
     buy_total_value = current_stats_dict['buy_coin_price'] * current_stats_dict['buy_coin_units']
     if trading_status['type'] == "sell":
         logger.debug('Selling - My balance says I have %s of %s to sell' % (units, current_stats_dict['sell_coin_short']))
@@ -474,45 +492,45 @@ def generate_stats(current_stats_dict, even_stats_dict, units, trading_status):
 
 
 
-def validate_trade_units(current_stats_dict, units, trading_status):
+def validate_trade_units(current_stats_dict, wallet, trading_status):
     '''
-    units for sell are actual units to sell
-    units for buy are the total crypto fiat in wallet
+    wallet for sell are actual units to sell
+    wallet for buy are the total crypto fiat in wallet
     '''
     logger = logging.getLogger(__name__)
     if trading_status['type'] == "sell":
-        units_to_sell = units
+        units_to_sell = wallet
         # check if selling more than whats in wallet - correct if needed
         if float(current_stats_dict['sell_coin_units']) > float(units_to_sell):
             validated_units = float(units_to_sell)
             logger.error('Selling - Error - Selling more units than you have in wallet - try selling %s' % units_to_sell)
             logger.error('Selling - Error - You have less %s %s than your selling amount %s' % (current_stats_dict['sell_coin_short'], units_to_sell, current_stats_dict['sell_coin_units']))
-            logger.debug('Selling - Corrected selling values %s %s %s' % (current_stats_dict['sell_coin_long'], validated_units, current_stats_dict['sell_coin_price']))
+            logger.info('Selling - Corrected selling values %s %s %s' % (current_stats_dict['sell_coin_long'], validated_units, current_stats_dict['sell_coin_price']))
         else:
             validated_units = current_stats_dict['sell_coin_units']
     elif trading_status['type'] == "buy":
-        wallet_total = units
+        wallet_total = wallet
         # check if purchase total is greater than whats in wallet - make adjustment if needed
         buy_total_value = current_stats_dict['buy_coin_price'] * current_stats_dict['buy_coin_units']
-        logger.debug('Buying - buying total is %s %s and you have %s %s' % (buy_total_value, trading_status['fiat'], wallet_total, trading_status['fiat']))
+        logger.info('Buying - Total is %s %s and you have %s %s' % (buy_total_value, trading_status['fiat'], wallet_total, trading_status['fiat']))
         if float(buy_total_value) > float(wallet_total):
             validated_units = float(wallet_total) / float(current_stats_dict['buy_coin_price'])
             logger.error('Buying - Total %s %s estimated %s - changing buying values based on real %s total' % (trading_status['fiat'], wallet_total, buy_total_value, trading_status['fiat']))
-            logger.debug('Buying - Corrected buying %s units of %s at %s due to balance being %s %s and estimated total was %s %s' % (validated_units, current_stats_dict['buy_coin_long'], current_stats_dict['buy_coin_price'], wallet_total, trading_status['fiat'], buy_total_value, trading_status['fiat']))
+            logger.info('Buying - Corrected buying %s units of %s at %s due to balance being %s %s and estimated total was %s %s' % (validated_units, current_stats_dict['buy_coin_long'], current_stats_dict['buy_coin_price'], wallet_total, trading_status['fiat'], buy_total_value, trading_status['fiat']))
         else:
             # If wallet has more than expected sell trade value, chances are sell trade yielded more than expected
             # unless the extra funds were there before the trade, so to take caution, will only use extra funds if within
             # one percent of expected sell trade value
-  
+
             buy_total_value_adjusted = float(buy_total_value) * 1.01
-            logger.debug('Buying - %s wallet is greater than expected, checking to see if 1 percent adjustment %s is greater than %s %s' % (trading_status['fiat'], buy_total_value_adjusted, wallet_total, trading_status['fiat']))
+            logger.info('Buying - %s wallet is greater than expected, confirming %s %s is less than adjustment %s' % (trading_status['fiat'], wallet_total, trading_status['fiat'], buy_total_value_adjusted))
             # if value of wallet is below expected value with an extra one percent added (buy_total_value_adjusted) - use wallet
             if float(wallet_total) < buy_total_value_adjusted:
                 validated_units = float(wallet_total) / float(current_stats_dict['buy_coin_price'])
-                logger.debug('Buying - %s wallet is less than 1 percent greater, adjusting purchase units to %s' % (trading_status['fiat'], validated_units))
+                logger.info('Buying - %s wallet is less than adjustment, changing buy units to %s' % (trading_status['fiat'], validated_units))
             else:
                 validated_units = current_stats_dict['buy_coin_units']
-                logger.debug('Buying - %s wallet is more than 1 percent greater, leaving purchase units as %s' % (trading_status['fiat'], validated_units))
+                logger.debug('Buying - %s wallet is greater than adjustment, leaving buy units as %s' % (trading_status['fiat'], validated_units))
     # return
     return round(validated_units, 8)
 
@@ -599,12 +617,12 @@ def evaluate_costs_and_units(polo, trading_status):
 
 
 
-def trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status):
+def trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units_wallet, trading_status, testing_status):
     logger = logging.getLogger(__name__)
 
-    #logger.debug('Sell coin balance %s' % sell_units['result'])
-    validated_units = validate_trade_units(current_stats_dict, sell_units['result'], trading_status)
-    generate_stats(current_stats_dict, even_stats_dict, sell_units['result'], trading_status)
+    #logger.debug('Sell coin balance %s' % sell_units_wallet['result'])
+    validated_units = validate_trade_units(current_stats_dict, sell_units_wallet['result'], trading_status)
+    generate_stats(current_stats_dict, even_stats_dict, sell_units_wallet['result'], trading_status)
     trading_status['sell_coin_utc'] = (time.time() - 10)
     if testing_status:
         # this is a test trade
@@ -615,10 +633,11 @@ def trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, tradin
     else:
         # this is a real trade
         result_dict = sell_coins(polo, current_stats_dict['sell_coin_long'], validated_units, current_stats_dict['sell_coin_price'])  # real and tested
+        logger.info('Selling - Sent trade for %s units of %s at %s ppu' % (validated_units, current_stats_dict['sell_coin_long'], current_stats_dict['sell_coin_price']))
 
     if result_dict['result']:
         logger.debug('Selling - Order placed and order number %s assigned' % result_dict['result']['orderNumber'])
-        trading_status['sell_counter'] = 0
+        #trading_status['sell_counter'] = 0
         trading_status['sell_order_placed'] = True
         trading_status['sell_order_number'] = result_dict['result']['orderNumber']
     else:
@@ -631,12 +650,12 @@ def trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, tradin
 
 
 
-def trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status):
+def trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units_wallet, trading_status, testing_status):
 
     logger = logging.getLogger(__name__)
 
-    validated_units = validate_trade_units(current_stats_dict, buy_units['result'], trading_status)
-    generate_stats(current_stats_dict, even_stats_dict, buy_units['result'], trading_status)
+    validated_units = validate_trade_units(current_stats_dict, buy_units_wallet['result'], trading_status)
+    generate_stats(current_stats_dict, even_stats_dict, buy_units_wallet['result'], trading_status)
     trading_status['buy_coin_utc'] = (time.time() - 10)
 
     if testing_status:
@@ -650,11 +669,12 @@ def trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_
     else:
         # this is a real trade with real price
         result_dict = buy_coins(polo, current_stats_dict['buy_coin_long'], validated_units, current_stats_dict['buy_coin_price'])  # real
+        logger.info('Buying - Sent trade for %s units of %s at %s ppu' % (validated_units, current_stats_dict['buy_coin_long'], current_stats_dict['buy_coin_price']))
 
     # process results
     if result_dict['result']:
         logger.debug('Buying - Order placed and order number %s assigned' % result_dict['result']['orderNumber'])
-        trading_status['buy_counter'] = 0
+        #trading_status['buy_counter'] = 0
         trading_status['buy_order_placed'] = True
         trading_status['buy_order_number'] = result_dict['result']['orderNumber']
     else:
@@ -751,10 +771,124 @@ def get_ratio(f_units, to_units, ratio_to_match=1):
         result['match'] = True
     return result
 
-    
-def main():
+
+
+def update_prev_stats(current_stats_dict, ratio_increasing, prev_list):
+    prev_dict = {
+        'sell' : round(current_stats_dict['sell_coin_price'],6),
+        'buy' : round(current_stats_dict['buy_coin_price'],6),
+        'ratio' : current_stats_dict['ratio'],
+        'increasing' : ratio_increasing,
+    }
+    if not prev_list:
+        prev_list = [prev_dict]
+        for i in range(4):
+            prev_list.insert(0, prev_dict)
+    else:
+        prev_list.insert(0, prev_dict)
+        prev_list.pop()
+    return prev_list
+
+
+
+def spike_or_dip(prev_list):
     '''
-    main function
+    confirms if trade threshold has been met due to spike in sell price or dip in buy price
+    '''
+    logger = logging.getLogger(__name__)
+    #logger.debug('Previous 0 %s Previous 1 %s' % (prev_list[0], prev_list[1]))
+
+    movement = {
+        'sell_spiked': False,
+        'buy_dipped': False,
+        'sell_percent': 0,
+        'buy_percent': 0,
+    }
+
+    # check if most recent is equal or less than least recent
+    # therefore no change or a negative change
+    if prev_list[0]['increasing']:
+        # check ratio going in wrong direction - decreasing
+        if prev_list[0]['ratio'] <= prev_list[1]['ratio']:
+            return movement
+    else:
+        # check ratio going in wrong direction  - increasing
+        if prev_list[0]['ratio'] >= prev_list[1]['ratio']:
+            return movement
+
+    # hits this if there has beena positive change
+    if prev_list[0]['sell'] > prev_list[1]['sell']:
+        movement['sell_spiked'] = True
+        movement['sell_percent'] = round(100 - (prev_list[1]['sell'] / prev_list[0]['sell'] * 100),2)
+        #logger.debug('Sell spiked %s ' % movement['sell_percent'])
+
+    if prev_list[0]['buy'] < prev_list[1]['buy']:
+        movement['buy_dipped'] = True
+        movement['buy_percent'] = round(100 - (prev_list[0]['buy'] / prev_list[1]['buy'] * 100),2)
+        #logger.debug('Buy spiked %s ' % movement['buy_percent'])
+
+    #for x in prev_list:
+    #    logger.debug('%s' % x)
+    return movement
+
+
+
+def check_units_against_wallet(polo, name_short, units, percent=1):
+    '''
+    checks if enough units are in wallet
+    if units are larger than wallet - corrects automatically to match wallet size
+    if units are smaller - correct if within the supplied percentage
+    '''
+    logger = logging.getLogger(__name__)
+
+    wallet_check = {
+        'error': False,
+        'coin_name_short': name_short,
+        'units': float(units),
+        'corrected_units': float(units),
+        'larger': False,
+        'smaller': False,
+    }
+
+    try:
+        percent = int(percent)
+    except:
+        percent = False
+    if percent > 100 or percent == 0:
+        percent = False
+
+    wallet_balance = get_coin_balance(polo, name_short)
+    if wallet_balance['error']:
+        wallet_check['error'] = wallet_balance['error']
+        return wallet_check
+
+    sell_wallet = wallet_balance['result']
+    if float(units) == float(sell_wallet):
+        # if the values are the same - do nothing and return
+        pass
+    elif float(units) > float(sell_wallet):
+        # if the units are greater than wallet - correct
+        wallet_check['larger'] = True
+        wallet_check['corrected_units'] = float(sell_wallet)
+    elif not percent:
+        # if the percentage was incorrectly supplied - do nothing and return
+        pass
+    elif float(units) < float(sell_wallet):
+        # if the units are less than wallet and the wallet total is within the supplied percentage - correct
+        units_adjusted = float(units) * (1 + percent / 100)
+        if float(sell_wallet) < units_adjusted:
+            wallet_check['smaller'] = True
+            wallet_check['corrected_units'] = float(sell_wallet)
+
+    return wallet_check
+
+
+
+def main():
+    ''' 
+    ######################################################
+     Main function
+    ######################################################
     '''
     # maximum trading threshold value - must be between 10 - 100
     max_trading_threshold = 20
@@ -775,7 +909,7 @@ def main():
     except:
         logger.error('config.py not found in module dir, rename config.txt to config.py and edit api and private key')
         sys.exit(1)
-        
+
     if args.buy == args.sell:
         logger.error('Buy and sell cryptos are the same, try again')
         sys.exit(1)
@@ -787,32 +921,46 @@ def main():
         'tsym': args.buy
     }
 
+
+    # check if over ride sell units is default
+    if args.sell_units_override == 0:
+        sell_units_override = False
+        logger.debug('Override sell units is disabled')
+    else:
+        sell_units_override = args.sell_units_override
+        logger.debug('Overriding sell units with %s' % sell_units_override)
+
+    # check if over ride buy units is default
+    if args.buy_units_override == 0:
+        buy_units_override = False
+        logger.debug('Override buy units is disabled')
+    else:
+        buy_units_override = args.buy_units_override
+        logger.debug('Overriding buy units with %s' % buy_units_override)
+
     # check if over ride ratio is default
     if args.ratio_override == 0:
         ratio_override = False
         logger.debug('Override ratio is disabled')
     else:
         ratio_override = round(args.ratio_override, 4)
-        logger.debug('Overriding trading threshold with %.4f' % ratio_override)    
-        
-        
-    # check if over ride units is default
-    if args.units_override == 0:
-        units_override = False
-        logger.debug('Override units is disabled')
-    else:
-        units_override = args.units_override
-        logger.debug('Overriding units with %s' % units_override)  
-        
-    
+        logger.debug('Overriding trading threshold with %.4f' % ratio_override)
+
+
+
     # double fee because buying and selling attracts fees for both trades
     worst_trade_fee = args.max_fee * 2
     trade_threshold = args.trade_threshold
-    
+
     email_me_updates = args.email_updates
-    spike_suppress = args.spike_suppress  
+    spike_suppress = args.spike_suppress
     print_headers = args.print_headers
-        
+    monitoring_mode = args.monitoring_mode
+    
+    if monitoring_mode:
+        logger.debug('Monitoring mode enabled')
+
+
 
     status_json_file = 'trade_status.json'
     trades_json_file = 'polo_trader_trades.json'
@@ -846,18 +994,25 @@ def main():
     polo.key = config.api_key
     polo.secret = config.private_key
 
-    
+
     # starting first trade so this needs to be set to true to trigger
     # grabbing the last trade details and profiling
     trading_status['flip_coins'] = True
 
+
+    '''
+    #
+    #
+    #  Start of trading loop
+    #
+    #
+    '''
 
     while True:
         '''
         if its the first time to loop or first time since completing a sell / buy trade
         it will hit this and flip the coins around and grab previous trade stats
         '''
-
         if trading_status['flip_coins']:
 
             #prof_dict = switch_buy_sell_around(prof_dict)
@@ -882,8 +1037,14 @@ def main():
                 logger.warning('')
                 logger.warning(trade.check_previously_traded())
                 logger.warning('Updated JSON trades file with previous trade details using current order book values')
-                logger.warning('Stopping script - you need to edit JSON values to match your target trade ratio and units')
-                logger.warning('JSON file to edit %s', trades_json_file)
+                #logger.warning('Stopping script - you need to edit JSON values to match your target trade ratio and units')
+                #logger.warning('JSON file to edit %s', trades_json_file)
+                logger.warning('Use the following flags to start in monitoring mode whilst customising sell and ratio values')
+                logger.warning('    -m (monitoring mode)')
+                logger.warning('    -su (sell units)')
+                logger.warning('    -r (trade threshold ratio)')
+                logger.warning('Disable monitoring mode by dropping -m flag and start trading')
+                
                 sys.exit()
 
             # this is for debugging only
@@ -898,7 +1059,8 @@ def main():
             logger.debug('Trading ratio was %s' % t['ratio'])
 
             # take previous traded details and update the current trade's details for profiling
-            trading_pairs = {
+            # tp = trading pairs
+            tp = {
                 'fsym_name_long': t['tsym_name_long'],
                 'fsym_name_short': t['tsym_name_short'],
                 'fsym_price': float(t['tsym_price']),
@@ -909,39 +1071,130 @@ def main():
                 'tsym_price': float(t['fsym_price']),
                 'tsym_units': float(t['fsym_units']),
             }
+           
 
-            # if over ride units are provided - change the units to sell
-            if units_override:
-                trading_pairs['fsym_units'] = units_override
-            
-            tp = trading_pairs
-            if factor_increasing(tp['fsym_price'], tp['tsym_price']):
+
+            '''
+            set over ride sell units
+            '''
+            # if over ride units are provided - change the sell units to over ride value
+            if sell_units_override:
+                tp['fsym_units'] = sell_units_override
+
+            # check if factor is increasing
+            factor_increasing = is_ratio_increasing(tp['fsym_price'], tp['tsym_price'])
+
+            if factor_increasing:
                 break_even_ratio = tp['ratio'] + (tp['ratio'] * worst_trade_fee)
             else:
                 break_even_ratio = tp['ratio'] - (tp['ratio'] * worst_trade_fee)
+           
+           
+
+            '''
+            Check if JSON data was auto generated from order book rather than a previous trade  
+            '''
+            
+            # check if from units and to units are matching b/c if matching it most likely means the JSON file for this pair 
+            # was auto added to JSON by script and not generated from a trade. User needs to update JSON file for this pair
+            if tp['fsym_units'] == tp['tsym_units']:
+                #logger.warning('')
+                #logger.warning('From units (fsym_units) and To units (tsym_units) are matching values, trades JSON requires manual update to continue')
+                #logger.warning('Change the to units (tsym_units) to the value of units you will be selling in next trade')
+                ##
+                ## this is not true yet b/c not using the ratio value just yet, plan to in the future
+                ##logger.warning('Update the ratio (ratio) to the target value you wish to trigger a sell / buy trade')
+                #logger.warning('Currently the ratio is based on the difference between fsym and tsym price, so to influence trading ratio, change the fsym or tsym price in JSON')
+                #logger.warning('In the future, the ratio in JSON will be used to control the next trade ratio')
+                #logger.warning('Increase ratio by decreasing the price of the cheaper coin or increasing the price of more expensive coin')
+                #logger.warning('Decrease ratio by increasing the price of the cheaper coin or decreasing the price of more expensive coin')
+                
+                logger.warning('')
+                logger.warning('From units (fsym_units) and To units (tsym_units) are matching values.')
+                logger.warning('JSON data auto generated by script, from order book data, due to lack of previous trade')
+                logger.warning('Use the following flags to start in monitoring mode whilst customising sell and ratio values')
+                logger.warning('    -m (monitoring mode)')
+                logger.warning('    -su (sell units)')
+                logger.warning('    -r (trade threshold ratio)')
+                logger.warning('Disable monitoring mode by dropping -m flag and start trading')
+
+                if factor_increasing:
+                    example_ratio = break_even_ratio * 1.10
+                    logger.warning('Ratio is increasing')
+                else:
+                    example_ratio = break_even_ratio / 1.10
+                    logger.warning('Ratio is decreasing')
+                logger.warning('')
+                logger.warning('--= Sample command =--')
+                logger.warning('python polo_trader.py -m -s %s -b %s -su 100 -r %.4f' % (pair_list_curr['fsym'], pair_list_curr['tsym'], example_ratio))
+                logger.warning('')
+                sys.exit()
+            
+
+            '''
+            Correct sell units if
+             - Wallet is smaller than units provded
+             - Selling units is slgihtly smaller than wallet - within 1%
+            '''
+            wallet_check = check_units_against_wallet(polo, tp['fsym_name_short'], tp['fsym_units'])
+            if wallet_check['error']:
+                logger.info('')
+                logger.error('Error retrieving balances, will not attempt to correct selling units')
+                logger.error('%s' % sell_units_wallet['error'])
+            else:
+                logger.info('')
+                if wallet_check['larger']:
+                    logger.error('Prep - Error - Selling more units than you have in wallet - try selling %.8f' % wallet_check['corrected_units'])
+                    if monitoring_mode:
+                        # whilst in monitoring mode allow user to control units
+                        tp['fsym_units'] = wallet_check['units']
+                    else:
+                        tp['fsym_units'] = wallet_check['corrected_units']
+                        logger.info('Prep - Corrected selling units for %s from %s to %.8f' % (tp['fsym_name_long'], wallet_check['units'], wallet_check['corrected_units']))
+
+                elif sell_units_override:
+                    # added override here so can be corrected if over wallet size but skip correction based on percentage
+                    pass
+                elif wallet_check['smaller']:
+                    logger.info('Prep - %s wallet is slightly larger than sell units' % tp['fsym_name_short'])
+                    logger.info('Prep - Changing sell units from %s to %s' % (wallet_check['units'], wallet_check['corrected_units']))
+                    tp['fsym_units'] = wallet_check['corrected_units']
 
             logger.debug('')
             logger.debug('##### Current Trade #####')
-            logger.debug('Selling %s units of %s' % (tp['fsym_units'], tp['fsym_name_long']))
+            logger.debug('Selling %.8f units of %s' % (tp['fsym_units'], tp['fsym_name_long']))
             logger.debug('Break even ratio of %s' % round(break_even_ratio,4))
-            logger.debug('')
 
-            # check if from units and to units are matching b/c if matching it
-            # most likley means the JSON file for this pair was auto added to
-            # JSON by script and not generated from a trade. User needs to update
-            # JSON file for this pair
-            if tp['fsym_units'] == tp['tsym_units']:
-                logger.warning('')
-                logger.warning('From units (fsym_units) and To units (tsym_units) are matching values, trades JSON requires manual update to continue')
-                logger.warning('Change the to units (tsym_units) to the value of units you will be selling in next trade')
-                #
-                # this is not true yet b/c not using the ratio value just yet, plan to in the future
-                #logger.warning('Update the ratio (ratio) to the target value you wish to trigger a sell / buy trade')
-                logger.warning('Currently the ratio is based on the difference between fsym and tsym price, so to influence trading ratio, change the fsym or tsym price in JSON')
-                logger.warning('In the future, the ratio in JSON will be used to control the next trade ratio')
-                logger.warning('Increase ratio by decreasing the price of the cheaper coin or increasing the price of more expensive coin')
-                logger.warning('Decrease ratio by increasing the price of the cheaper coin or decreasing the price of more expensive coin')
-                sys.exit()
+
+            '''
+            buy units over ride or trade ratio override
+            '''
+            if buy_units_override or ratio_override:
+                if buy_units_override:
+                    if factor_increasing:
+                        #  buy_units / from units
+                        buy_units_ratio = buy_units_override / tp['fsym_units']
+                    else:
+                        #  from units / buy_units
+                        buy_units_ratio = tp['fsym_units'] / buy_units_override
+                    buy_units_ratio = round(buy_units_ratio,4)
+                    logger.debug('Buy override enable %s' % (buy_units_ratio))
+                elif ratio_override:
+                    if factor_increasing:
+                        # (ratio - even) / even
+                        threshold_percent = (ratio_override - break_even_ratio) / break_even_ratio * 100
+                        
+                    else:
+                        # (even - ratio) / even
+                        threshold_percent = (break_even_ratio - ratio_override) / break_even_ratio * 100
+                    threshold_percent = round(threshold_percent,4)
+                    logger.debug('Ratio override enable %s trade threshold is now %s' % (ratio_override, threshold_percent))
+                logger.debug('')
+            else:
+                threshold_percent = trade_threshold
+              
+
+           
 
             # update trading status
             trading_status['sell_coin_long'] = tp['fsym_name_long']
@@ -957,13 +1210,15 @@ def main():
             spike_suppress_counter = 0
             # force headers to print after trade
             print_headers_counter = print_headers
-            
+            # default previous stats
+            prev_list = False
+
 
         # just a little debugging to screen
         #logger.debug('header counter %s' % print_headers_counter)
 
         # profile the trading pair
-        mycoins = ProfilePairs(polo, worst_trade_fee, trading_pairs)
+        mycoins = ProfilePairs(polo, worst_trade_fee, tp)
 
         try:
             #purchase_stats_dict, current_stats_dict, even_stats_dict = mycoins.get_stats()
@@ -978,11 +1233,22 @@ def main():
 
         ratio_increasing = mycoins.get_ratio_direction(current_stats_dict['sell_coin_price'], current_stats_dict['buy_coin_price'])
 
+        # if previous stats are non-existant create them for first time
+        if not prev_list:
+            prev_list = update_prev_stats(current_stats_dict, ratio_increasing, prev_list)
+
+
         # targets are only updated after a trade is completed or first time run
         if refresh_targets:
             refresh_targets = False
-            lod_targets = mycoins.get_targets(max_trading_threshold, trading_pairs['fsym_units'], current_stats_dict, even_stats_dict)
-            target_dict = calc_target(trade_threshold, lod_targets)
+            #lod_targets = mycoins.get_targets(max_trading_threshold, tp['fsym_units'], current_stats_dict, even_stats_dict)
+            if buy_units_override:
+                # buy units over ride only - which is incomplete
+                target_dict = mycoins.get_buy_units_threshold(tp['fsym_units'], current_stats_dict, even_stats_dict, buy_units_ratio, buy_units_override)
+            else:
+                #normal plus ratio override
+                target_dict = mycoins.get_trade_threshold(tp['fsym_units'], current_stats_dict, even_stats_dict, threshold_percent)
+            #target_dict = calc_target(trade_threshold, lod_targets)
             if not target_dict:
                 logger.error('Error matching trading factor to list of targets, exiting....')
                 sys.exit(1)
@@ -994,7 +1260,9 @@ def main():
                 updated_buy_coin_price = current_stats_dict['sell_coin_price'] * target_dict['ratio']
             target_dict['buy_coin_price'] = round(updated_buy_coin_price,8)
 
-
+        '''
+        Print headers
+        '''
         print_headers_counter += 1
         try:
             if print_headers_counter > print_headers:
@@ -1030,24 +1298,39 @@ def main():
             bad_factor_detected(polo, current_stats_dict, factor_check)
             break
 
+        # debugging new feature
+        # movement = spike_or_dip(prev_list)
+        #logger.debug('Sell spiked %s %s' % (movement['sell_percent'], '%'))
+
         '''
         Check if ready to start trading
-        '''       
-        # check if evaluate trading is enabled
-        if trading_status['eval_trading']:
+        '''
+        
+        #check monitoring only mode is enabled 
+        if monitoring_mode:
+            trading_status['trading'] = False
+        elif trading_status['eval_trading']:
             # evaluate if ratio has hit threshold
             if ratio_override:
                 trading_status['trading'] = eval_trading(ratio_increasing, current_stats_dict['ratio'], ratio_override)
             else:
                 trading_status['trading'] = eval_trading(ratio_increasing, current_stats_dict['ratio'], target_dict['ratio'])
 
-            # increment spike suppress counter if trading is enabled
-            if trading_status['trading']:     
-                spike_suppress_counter += 1
-                logger.debug('Trade threshold met %s / %s' % (spike_suppress_counter, spike_suppress))
+            # was it a sell spike or a buy dip
+            if trading_status['trading']:
+                movement = spike_or_dip(prev_list)
+                # if sell spiked and buy did nothing, override spike suppress
+                if movement['sell_spiked'] and not movement['buy_dipped']:
+                    spike_suppress_counter = spike_suppress
+                    logger.debug('Sell Spiked - %s %s - spike supress skipped %s / %s' % (movement['sell_percent'], '%', spike_suppress_counter, spike_suppress))
+                    #logger.debug('Sell spiked %s ' % movement['sell_percent'])
+                else:
+                    # increment spike suppress counter if trading is enabled
+                    spike_suppress_counter += 1
+                    logger.debug('Trade threshold met %s / %s' % (spike_suppress_counter, spike_suppress))
             else:
                 spike_suppress_counter = 0
-                
+
             # start trading if spike suppress counter is >= to spike suppress value
             if spike_suppress_counter >= spike_suppress:
                 trading_status['trading'] = True
@@ -1055,16 +1338,21 @@ def main():
                 print_headers_counter = 0
             else:
                 trading_status['trading'] = False
-           
+
+
+        
 
         '''
         start or continue trading
         '''
         if trading_status['trading']:
+
+            # debug to exit before trading
+            #sys.exit(1)
         
             # disable trading evaluation - this will be set to true after finished trading
             trading_status['eval_trading'] = False
-                   
+
             # this variable only needs to be set the first time round, for use when emailing
             if trading_status['sell_counter'] == 0:
                 if ratio_override:
@@ -1072,7 +1360,7 @@ def main():
                 else:
                     target_ratio = target_dict['ratio']
                 logger.debug('Target ratio %s - current ratio %s - Trading triggered' % (target_ratio, current_stats_dict['ratio']))
-                   
+
             # this is for major debug option, not needed in future
             if args.debug:
                 print_trade_status(trading_status)
@@ -1093,13 +1381,12 @@ def main():
                         email_status = send_message(config, subject, html)
                         if email_status['error']:
                             logger.error(email_status['msg'])
-                        
-                # debug to exit before trading        
-                #sys.exit(1)
-                
+
+
+
                 # increment selling loop counter
                 trading_status['sell_counter'] += 1
-                    
+
                 # if sell order is placed check for orders
                 order_to_review = None
                 if trading_status['sell_order_placed']:
@@ -1109,14 +1396,14 @@ def main():
                     if open_orders_dict['error']:
                         logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
                         continue
-    
+
                     # if found sell orders
                     if open_orders_dict['order_sell_count'] > 0:
                         # and orders match last order number
                         for order in open_orders_dict['order_list']:
                             if trading_status['sell_order_number'] in (order['order_number'],):
                                 order_to_review = order
-                            
+
                 # if a current unfilled order is found
                 if order_to_review is not None:
                     logger.debug('Selling - %s Found sell order matching order number %s' % (trading_status['sell_counter'], order_to_review['order_number']))
@@ -1137,24 +1424,24 @@ def main():
                         logger.debug('Selling - COMPLETE - Trading Status changed to %s' % (trading_status['type']))
                     else:
                         # sell order is not placed so get balances and proceed
-                        sell_units = get_coin_balance(polo, current_stats_dict['sell_coin_short'])
+                        sell_units_wallet = get_coin_balance(polo, current_stats_dict['sell_coin_short'])
                         # if there were errors
-                        if sell_units['error']:
+                        if sell_units_wallet['error']:
                             logger.error('Error retrieving balances, can not buy or sell')
-                            logger.error('%s' % sell_units['error'])
+                            logger.error('%s' % sell_units_wallet['error'])
                         else:
-                            trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status)
+                            trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units_wallet, trading_status, testing_status)
                             #
-                            # these lines below will not work with expensive cryptos, sums being moved around all could be below 1 so I 
+                            # the if statement below will always match expensive cryptos, sums being moved around all could be below 1 so I
                             # suspect the code is not suitable
                             #
                             # # if sell coin has no balance
-                            # if float(sell_units['result']) < 1:
+                            # if float(sell_units_wallet['result']) < 1:
                             #     logger.error('Selling - Sell coin returned no units to sell, skipping sell')
                             #     trading_status['trading'] = False
                             # else:
                             #     # start selling
-                            #     trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units, trading_status, testing_status)
+                            #     trading_status = trade_sell_now(polo, current_stats_dict, even_stats_dict, sell_units_wallet, trading_status, testing_status)
 
 
             if trading_status['type'] == "buy":
@@ -1166,10 +1453,10 @@ def main():
                         email_status = send_message(config, subject, html)
                         if email_status['error']:
                             logger.error(email_status['msg'])
-            
+
                 # increment selling loop counter
                 trading_status['buy_counter'] += 1
-                
+
                 # if buy order is placed check for orders
                 order_to_review = None
                 if trading_status['buy_order_placed']:
@@ -1179,7 +1466,7 @@ def main():
                     if open_orders_dict['error']:
                         logger.error('Grabbing open orders returned error - %s' % open_orders_dict['error'])
                         continue
-                    
+
                     # if found buy orders
                     if open_orders_dict['order_buy_count'] >0:
                         # and orders match last order number
@@ -1204,33 +1491,33 @@ def main():
                     # it means buy is complete
                     if trading_status['buy_order_placed']:
                         trading_status['trading_complete'] = True
-                        # change type to something other than buy or sell to ensure script does nto hit buy or sell if statements, 
+                        # change type to something other than buy or sell to ensure script does nto hit buy or sell if statements,
                         # at this point in time eval does nothing else.
                         trading_status['type'] = "eval"
                         trading_status['eval_counter'] = 0
                         logger.debug('Buying - COMPLETE - Trading Status changed to %s' % (trading_status['type']))
                     else:
                         # buy order is not placed so get fiat balance and proceed
-                        buy_units = get_coin_balance(polo, trading_status['fiat'])
+                        buy_units_wallet = get_coin_balance(polo, trading_status['fiat'])
                         # if there were errors
-                        if buy_units['error']:
+                        if buy_units_wallet['error']:
                             logger.error('Buying - Error retrieving balances, can not buy or sell')
-                            logger.error('Buying - %s' % buy_units['error'])
+                            logger.error('Buying - %s' % buy_units_wallet['error'])
                         else:
-                            trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status)
+                            trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units_wallet, trading_status, testing_status)
                             #
-                            # these lines below will not work with expensive cryptos, sums being moved around all could be below 1 so I 
+                            # the if statement below will always match expensive cryptos, sums being moved around all could be below 1 so I
                             # suspect the code is not suitable
                             #
                             # # if fiat has no balance
-                            # if float(buy_units['result']) < 1:
+                            # if float(buy_units_wallet['result']) < 1:
                             #      logger.error('Buying - Not enough %s to buy coins, skipping buy' % trading_status['fiat'])
                             #      trading_status['trading'] = False
                             #      # I need to figure out if order was cancelled
                             #      # get balance and compare selling units
                             #      # if same or similar i would suggest the buy was cancelled
                             # else:
-                            #     trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units, trading_status, testing_status)
+                            #     trading_status = trade_buy_now(polo, current_stats_dict, even_stats_dict, buy_units_wallet, trading_status, testing_status)
 
 
             '''
@@ -1260,26 +1547,6 @@ def main():
                     logger.error('%s Error no buy order stats' % trading_status['eval_counter'])
                     continue
                 logger.info('')
-                
-
-                '''
-                Finalise the trade status and write to the status JSON
-                '''
-                # finalise trading status so it can be written to JSON file
-                trading_status['trading'] = False
-                trading_status['trading_complete'] = False
-                trading_status['buy_order_placed'] = False
-                trading_status['sell_order_placed'] = False
-                trading_status['type'] = "sell"
-                trading_status['sell_counter'] = 0
-                trading_status['buy_counter'] = 0
-                trading_status['eval_counter'] = 0
-                trading_status['flip_coins'] = True
-
-                # write trade status to json
-                polo_tools.write_json_data(status_json_file, trading_status)
-                json_data = get_json_trades(status_json_file)
-                print_json_trade_status(json_data)
 
 
                 '''
@@ -1301,6 +1568,7 @@ def main():
                 json_data_complete = trade.get_updated_json_data()
                 json_data_updated = trade.write_json_data(json_data_complete, pair_list_curr, json_update)
 
+                
                 '''
                 Email trade stats
                 '''
@@ -1310,12 +1578,32 @@ def main():
                     email_status = send_message(config, subject, html)
                     if email_status['error']:
                         logger.error(email_status['msg'])
+
                 
+                '''
+                Finalise the trade status and write to the status JSON
+                '''
+                # finalise trading status so it can be written to JSON file
+                trading_status['trading'] = False
+                trading_status['trading_complete'] = False
+                trading_status['buy_order_placed'] = False
+                trading_status['sell_order_placed'] = False
+                trading_status['type'] = "sell"
+                trading_status['sell_counter'] = 0
+                trading_status['buy_counter'] = 0
+                trading_status['eval_counter'] = 0
+                trading_status['flip_coins'] = True
+
+                # write trade status to json
+                polo_tools.write_json_data(status_json_file, trading_status)
+                json_data = get_json_trades(status_json_file)
+                print_json_trade_status(json_data)
+
                 '''
                 Flip trading pair before starting the next loop
                 '''
                 pair_list_curr = flippa_da_syms(pair_list_curr)
-                
+
                 '''
                 Disable settings that trigger immediately trading after a trade completes
                 '''
@@ -1325,19 +1613,23 @@ def main():
 
                 # Disable override ratio. If enabled it will trigger a trade immediately
                 ratio_override = False
-                # Disable override units. No need for override after a trade is complete
-                units_override = False
-                
-                
-                
-                
+                # Disable override sell units. No need for override after a trade is complete
+                sell_units_override = False
+                # disable override buy units. no need for override after trade is complete
+                buy_units_override = False
+
+
+        # push and pop previous stats before looping again
+        prev_list = update_prev_stats(current_stats_dict, ratio_increasing, prev_list)
+
+
         '''
         ===== To do list =====
         over ride trading ratio - done
         over ride selling units
         sell only
         email when trading - done
-        
+
         '''
 
 
